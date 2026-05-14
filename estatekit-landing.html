@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EstateKit — Guaranteed Listing Appointments</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Montserrat — all weights needed -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Montserrat", "sans-serif"] },
+            colors: { brand: "#0086ff" },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      /* Base */
+      *,
+      body {
+        font-family: "Montserrat", sans-serif;
+      }
+
+      /* Kill all focus styles */
+      *,
+      *:focus,
+      *:focus-visible,
+      *:focus-within {
+        outline: none !important;
+        box-shadow: none !important;
+      }
+
+      /* 16:9 video wrapper */
+      .video-wrap {
+        position: relative;
+        width: 100%;
+      }
+      .video-wrap iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+
+      /*
+        CVR — above-the-fold rule:
+        On desktop the user should see bar + headline + VSL + CTA without scrolling.
+        We achieve this by capping the hero section to viewport height on md+,
+        constraining content width, and keeping headline font sizes modest on lg.
+      */
+      @media (min-width: 1024px) {
+        .hero-section {
+          /* Enough to fit everything comfortably without scrolling on a 900px+ viewport */
+          padding-top: 2rem;
+          padding-bottom: 1.5rem;
+        }
+      }
+
+      /* Cal.com embed — auto height, minimum sizes per device */
+      .cal-wrap {
+        width: auto;
+        min-height: 580px;
+      }
+      @media (min-width: 768px) {
+        .cal-wrap {
+          min-height: 700px;
+        }
+      }
+      @media (min-width: 1024px) {
+        .cal-wrap {
+          min-height: 800px;
+        }
+      }
+
+      /* CTA button pulse — draws eye without being obnoxious */
+      @keyframes subtle-pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.88;
+        }
+      }
+      .btn-pulse {
+        animation: subtle-pulse 2.8s ease-in-out infinite;
+      }
+      wistia-player[media-id="z6oqli7c8o"]:not(:defined) {
+        background: center / contain no-repeat
+          url("https://fast.wistia.com/embed/medias/z6oqli7c8o/swatch");
+        display: block;
+        filter: blur(5px);
+        padding-top: 56.25%;
+      }
+    </style>
+    <script src="https://fast.wistia.com/player.js" async></script>
+    <script
+      src="https://fast.wistia.com/embed/z6oqli7c8o.js"
+      async
+      type="module"
+    ></script>
+  </head>
+
+  <body class="bg-white text-slate-900 antialiased">
+    <!-- ─────────────────────────────────────────
+         1. ANNOUNCEMENT BAR
+         CVR: specific qualifier + scarcity signal
+    ───────────────────────────────────────── -->
+    <div
+      class="bg-brand text-white text-center text-xl font-black text py-2 px-4 tracking-wide leading-tight"
+    >
+      For Full-Time Agents Ready to Stop Waiting on Referrals
+    </div>
+
+    <!-- ─────────────────────────────────────────
+         2. HERO
+         CVR goals:
+         - Headline readable + fully visible on desktop without scrolling
+         - VSL visible in the fold on desktop
+         - CTA visible without scrolling on desktop
+         - Pre-head sets up the pain before the promise
+    ───────────────────────────────────────── -->
+    <section
+      class="hero-section mx-auto px-4 sm:px-6 pt-8 md:pt-10 pb-4 md:pb-6 text-center"
+    >
+      <!-- Pre-head: agitate the pain first -->
+      <p
+        class="text-slate-600 text-base md:text-lg font-medium mb-3 tracking-wide"
+      >
+        Stop Wasting Time With Flaky Leads and Unpredictable Marketing...
+      </p>
+
+      <!--
+        Headline:
+        - Capped at text-4xl on desktop so it doesn't push VSL + CTA below fold
+        - Font weight 800 gives impact without needing giant size
+        - Line height tight for punch
+      -->
+      <h1
+        class="font-semibold text-3xl sm:text-4xl md:text-5xl leading-tight mb-4 max-w-5xl mx-auto"
+      >
+        We
+        <span class="text-brand font-black"
+          >GUARANTEE
+          <span class="underline decoration-brand font-black underline-offset-2"
+            >Closed Deals</span
+          >
+        </span>
+        Or Your Money Back — A Proven System That Delivers
+        <span class="text-brand font-black"
+          >Real Results, Without the Risk.</span
+        >
+      </h1>
+
+      <!-- VSL — tight vertical margin so CTA stays visible on desktop -->
+      <div class="my-4 md:my-5 max-w-2xl lg:max-w-3xl mx-auto">
+        <!-- Replace pgr5tnrhfo with your Wistia video ID -->
+        <div class="video-wrap">
+          <wistia-player
+            media-id="z6oqli7c8o"
+            aspect="1.7777777777777777"
+          ></wistia-player>
+        </div>
+      </div>
+
+      <!--
+        Primary CTA:
+        - Action-specific copy with micro-commitment framing ("free")
+        - Full width on mobile (easier tap target)
+        - Subtle pulse draws eye
+        - Subtext kills the risk objection immediately below
+      -->
+      <a
+        href="#book"
+        class="btn-pulse inline-block w-full sm:w-auto bg-brand text-white font-bold text-base md:text-lg px-8 md:px-12 py-3 md:py-4 rounded mb-2 uppercase tracking-wide"
+      >
+        See How It Works
+      </a>
+    </section>
+
+    <!-- ─────────────────────────────────────────
+         2C. COPY BRIDGE — leads into calendar
+         CVR: micro-commitment language, not salesy
+    ───────────────────────────────────────── -->
+    <div class="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 pb-2 text-center">
+      <p class="text-slate-900 text-base md:text-lg italic mb-1">
+        "This may be the <strong>FASTEST</strong> and most
+        <strong>Consistent</strong> way to scale your Real Estate business..."
+      </p>
+      <p class="text-brand text-base md:text-lg font-bold font-bold my-6">
+        Backed By Our 100% Money Back Guarantee
+      </p>
+      <p class="text-slate-900 text-base md:text-lg">
+        Schedule a discovery call below to learn exactly how our
+        <strong>Fully Guaranteed Listing Acquisition</strong> system works 👇
+      </p>
+    </div>
+
+    <!-- ─────────────────────────────────────────
+         3. CAL.COM BOOKING EMBED
+         CVR: calendar is the conversion event — give it room
+    ───────────────────────────────────────── -->
+    <section id="book" class="max-w-5xl mx-auto px-4 sm:px-6 pt-4 pb-5">
+      <iframe
+        src="https://cal.com/estatekit/10listingappts"
+        title="Book your EstateKit Strategy Call"
+        width="100%"
+        height="100%"
+        class="cal-wrap rounded-lg w-full"
+        frameborder="0"
+        scrolling="no"
+      ></iframe>
+    </section>
+
+    <!-- ─────────────────────────────────────────
+         5. SOCIAL PROOF — agent count + avatars
+         CVR: herd behaviour — "others like me are doing this"
+    ───────────────────────────────────────── -->
+    <section
+      class="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 pb-8 md:pb-10 text-center"
+    >
+      <div class="flex justify-center -space-x-2 mb-3">
+        <!-- Replace with real agent headshots when available -->
+        <img
+          src="/clientpfps/nielen.jpeg"
+          class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white"
+          alt=""
+        />
+        <img
+          src="/clientpfps/natie.jpeg"
+          class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white"
+          alt=""
+        />
+        <img
+          src="/clientpfps/teboho.jpeg"
+          class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white"
+          alt=""
+        />
+        <img
+          src="/clientpfps/david.jpeg"
+          class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white"
+          alt=""
+        />
+        <img
+          src="/clientpfps/mpho.png"
+          class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white"
+          alt=""
+        />
+        <div
+          class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white bg-brand flex items-center justify-center text-white text-base md:text-lg font-bold"
+        >
+          +25
+        </div>
+      </div>
+      <p
+        class="text-center text-slate-900 font-semibold text-base md:text-lg mb-5"
+      >
+        Join Other Agents that we actively working with to grow their business
+        with Guaranteed results.
+      </p>
+      <p
+        class="text-center text-slate-900 font-black text-base md:text-lg mb-5"
+      >
+        Hear from them below...
+      </p>
+    </section>
+
+    <!-- ─────────────────────────────────────────
+         8. TESTIMONIAL VIDEO STACK
+         CVR: volume of proof — the more the better past this point
+         One per row. Copy a block to add more.
+    ───────────────────────────────────────── -->
+    <section class="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 pb-6">
+      <!-- ── Testimonial 1 — replace YOUR_WISTIA_ID_T1 ── -->
+      <div class="mb-10 md:mb-12">
+        <div class="video-wrap">
+          <wistia-player
+            media-id="ahm5osiwq8"
+            aspect="1.7777777777777777"
+          ></wistia-player>
+        </div>
+        <div class="mt-3 text-center">
+          <p class="font-semibold text-slate-900 text-base md:text-lg">
+            Lebogang M. In Pretoria
+          </p>
+          <p class="text-brand text-base md:text-lg font-bold">
+            12 Listing Appointments in 6 days
+          </p>
+        </div>
+      </div>
+
+      <!-- ── Testimonial 2 — replace YOUR_WISTIA_ID_T2 ── -->
+      <div class="mb-10 md:mb-12">
+        <div class="video-wrap">
+          <audio controls class="mx-auto">
+            <source src="/audios/bennie.MP3" type="audio/mpeg" />
+            Your browser does not support the audio element.
+          </audio>
+        </div>
+        <div class="mt-3 text-center">
+          <p class="font-semibold text-slate-900 text-base md:text-lg">
+            Bennie B. In Centurion
+          </p>
+          <p class="text-brand text-base md:text-lg font-bold">
+            20 Appointments in a single week
+          </p>
+        </div>
+      </div>
+
+      <!--
+        ── ADD MORE TESTIMONIALS ──
+        Copy and paste this block, replace ID + name + result:
+
+        <div class="mb-10 md:mb-12">
+          <div class="video-wrap">
+            <iframe src="https://fast.wistia.net/embed/iframe/YOUR_WISTIA_ID?autoPlay=false" title="Agent testimonial" allow="autoplay; fullscreen" allowfullscreen></iframe>
+          </div>
+          <div class="mt-3 text-center">
+            <p class="font-semibold text-slate-900 text-base md:text-lg">Agent Name · City</p>
+            <p class="text-brand text-base md:text-lg font-bold">Result here</p>
+          </div>
+        </div>
+      -->
+    </section>
+
+    <!-- ─────────────────────────────────────────
+         7. PROOF SCREENSHOTS
+         CVR: visual evidence — harder to fake, more believable than text
+    ───────────────────────────────────────── -->
+    <section class="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 pb-10 md:pb-12">
+      <p class="text-center text-slate-900 font-bold text-xl md:text-3xl mb-5">
+        Get appointment texts like these daily...
+      </p>
+      <!--
+        Replace each grey block with a real screenshot:
+        <img src="screenshot.png" class="w-full rounded-lg" alt="proof" />
+      -->
+      <div class="grid grid-cols-1 gap-3 md:gap-4">
+        <div class="mx-auto">
+          <img
+            src="/apptscreenshots/Screenshot 2026-04-14 003644.png"
+            height="200px"
+            width="auto"
+            alt=""
+          />
+        </div>
+        <div class="mx-auto">
+          <img
+            src="/apptscreenshots/Screenshot 2026-04-14 003721.png"
+            height="200px"
+            width="auto"
+            alt=""
+          />
+        </div>
+        <div class="mx-auto">
+          <img
+            src="/apptscreenshots/Screenshot 2026-04-14 003812.png"
+            height="200px"
+            width="auto"
+            alt=""
+          />
+        </div>
+        <div class="mx-auto">
+          <img
+            src="/apptscreenshots/Screenshot 2026-04-14 003933.png"
+            height="200px"
+            width="auto"
+            alt=""
+          />
+        </div>
+        <div class="mx-auto">
+          <img
+            src="/apptscreenshots/Screenshot 2026-04-14 004026.png"
+            height="200px"
+            width="auto"
+            alt=""
+          />
+        </div>
+        <div class="mx-auto">
+          <img
+            src="/apptscreenshots/Screenshot 2026-04-14 003644.png"
+            height="200px"
+            width="auto"
+            alt=""
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────
+         9. FINAL CTA
+         CVR: re-anchor the guarantee, repeat the action
+    ───────────────────────────────────────── -->
+    <section
+      class="max-w-2xl lg:max-w-3xl mx-auto px-4 sm:px-6 py-10 md:py-14 text-center"
+    >
+      <a
+        href="#book"
+        class="btn-pulse inline-block w-full sm:w-auto bg-brand text-white font-bold text-base md:text-lg px-10 md:px-14 py-3 md:py-4 rounded uppercase tracking-wide mb-2"
+      >
+        See How We Did It
+      </a>
+    </section>
+
+    <!-- ─────────────────────────────────────────
+         10. FOOTER
+    ───────────────────────────────────────── -->
+    <footer class="border-t border-slate-100 py-8 px-4 text-center">
+      <p class="text-slate-400 text-xs mb-2">
+        © 2026 EstateKit — All rights reserved.
+      </p>
+      <p class="text-slate-400 text-xs max-w-lg mx-auto">
+        Facebook disclaimer: This site is not a part of the Facebook website or
+        Facebook Inc. Additionally, this site is NOT endorsed by Facebook in any
+        way. Facebook is a trademark of Facebook, Inc.
+      </p>
+    </footer>
+  </body>
+</html>

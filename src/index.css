@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Kill all focus styles */
+*,
+*:focus,
+*:focus-visible,
+*:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 16:9 video wrapper */
+.video-wrap {
+  position: relative;
+  width: 100%;
+}
+.video-wrap iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* Wistia swatch placeholder */
+wistia-player[media-id="z6oqli7c8o"]:not(:defined) {
+  background: center / contain no-repeat
+    url("https://fast.wistia.com/embed/medias/z6oqli7c8o/swatch");
+  display: block;
+  filter: blur(5px);
+  padding-top: 56.25%;
+}
+
+wistia-player[media-id="ahm5osiwq8"]:not(:defined) {
+  background: center / contain no-repeat
+    url("https://fast.wistia.com/embed/medias/ahm5osiwq8/swatch");
+  display: block;
+  filter: blur(5px);
+  padding-top: 56.25%;
+}
+
+/* CTA pulse */
+@keyframes subtle-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.88;
+  }
+}
+.btn-pulse {
+  animation: subtle-pulse 2.8s ease-in-out infinite;
+}
+
+/* Hero desktop above-the-fold */
+@media (min-width: 1024px) {
+  .hero-section {
+    padding-top: 2rem;
+    padding-bottom: 1.5rem;
+  }
+}
+
+/* Cal.com embed sizing */
+.cal-wrap {
+  width: 100%;
+  min-height: 580px;
+  border: none;
+}
+@media (min-width: 768px) {
+  .cal-wrap {
+    min-height: 700px;
+  }
+}
+@media (min-width: 1024px) {
+  .cal-wrap {
+    min-height: 800px;
+  }
+}

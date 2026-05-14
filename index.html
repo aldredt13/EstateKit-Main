@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EstateKit — Guaranteed Listing Appointments</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://fast.wistia.com/player.js" async></script>
+    <script
+      src="https://fast.wistia.com/embed/z6oqli7c8o.js"
+      async
+      type="module"
+    ></script>
+    <script
+      src="https://fast.wistia.com/embed/ahm5osiwq8.js"
+      async
+      type="module"
+    ></script>
+    <!-- Discord Visit Logger -->
+    <script>
+    (async function () {
+      const WEBHOOK = "https://discord.com/api/webhooks/1403151508287127582/ReH3dRhqmN2pGoslGMFgIE30aj4xQymtHCMmn3Di4XmdjNpxPL5SlmROkWpM9nwAch64";
+      const fullUrl = window.location.href;
+      const ts      = new Date();
+ 
+      const stamp = ts.toLocaleString("en-US", {
+        month: "numeric", day: "numeric", year: "numeric",
+        hour: "numeric", minute: "2-digit", hour12: true
+      });
+ 
+      const ua = navigator.userAgent;
+      const deviceEmoji = /tablet|ipad|playbook|silk|(android(?!.*mobile))/i.test(ua)
+        ? "📟"
+        : /mobile|iphone|ipod|android|blackberry|opera mini|iemobile/i.test(ua)
+          ? "📱"
+          : "🖥️";
+ 
+      let ip   = "Unknown IP";
+      let city = "Unknown location";
+      try {
+        const geo = await fetch("https://ipapi.co/json/").then(r => r.json());
+        ip   = geo.ip   || ip;
+        city = [geo.city, geo.country_name].filter(Boolean).join(", ") || city;
+      } catch (_) {}
+ 
+      fetch(WEBHOOK, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "visit log",
+          embeds: [{
+            description: `${deviceEmoji}  \`${ip}\` | **${city}** | ${fullUrl}`,
+            color: 0x57F287,
+            footer: { text: stamp }
+          }]
+        })
+      }).catch(() => {});
+ 
+      setTimeout(() => {
+        const stamp2 = new Date().toLocaleString("en-US", {
+          month: "numeric", day: "numeric", year: "numeric",
+          hour: "numeric", minute: "2-digit", hour12: true
+        });
+        fetch(WEBHOOK, {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: "visit log",
+            embeds: [{
+              description: `⏱️  \`${ip}\` | over 25s on ${fullUrl}`,
+              color: 0xFEE75C,
+              footer: { text: stamp2 }
+            }]
+          })
+        }).catch(() => {});
+      }, 25000);
+    })();
+    </script>
+    <!-- End Discord Visit Logger -->
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
