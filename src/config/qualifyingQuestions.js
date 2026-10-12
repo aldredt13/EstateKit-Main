@@ -12,6 +12,7 @@ export const QUALIFYING_QUESTIONS = [
   {
     id: "ppra_status",
     question: "Your PPRA status?",
+    placeholder: "Choose your status",
     options: [
       { value: "principal_ffc", label: "Principal", points: 30 },
       { value: "full_ffc", label: "Full Status", points: 30 },
@@ -26,28 +27,13 @@ export const QUALIFYING_QUESTIONS = [
     ],
   },
   {
-    id: "area",
-    type: "text",
-    question: "Which city do you operate in?",
-    placeholder: "e.g. Sandton, Fourways",
-    points: 15,
-  },
-  {
     id: "transactions",
-    question: "Deals closed in the last 12 months?",
+    question: "How many transactions have you done in the last 6 months?",
+    placeholder: "Choose a range",
     options: [
-      { value: "0_5", label: "0 – 5", points: 8 },
-      { value: "6_10", label: "6 – 10", points: 18 },
-      { value: "10_plus", label: "10+", points: 25 },
-    ],
-  },
-  {
-    id: "timeline",
-    question: "How soon do you want more leads?",
-    options: [
-      { value: "immediate", label: "Right away", points: 25 },
-      { value: "30_days", label: "Within 30 days", points: 15 },
-      { value: "later", label: "Just browsing", points: 4 },
+      { value: "0_2", label: "0 – 2", points: 8 },
+      { value: "3_5", label: "3 – 5", points: 16 },
+      { value: "6_plus", label: "6 or more", points: 25 },
     ],
   },
 ];

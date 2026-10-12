@@ -209,7 +209,7 @@ const Results = () => {
           <p className="mx-auto mt-4 max-w-xl text-base text-slate-300">
             Four questions, about ninety seconds. We only take on agents we know
             we can get results for.
-          </p>
+          </p> 
           <Link
             to="/pitch"
             className="mt-8 inline-block rounded bg-brand px-8 py-5 text-xl font-black uppercase leading-none tracking-wide text-white transition-opacity hover:opacity-90"

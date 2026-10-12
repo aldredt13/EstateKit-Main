@@ -5,12 +5,10 @@ import { usePageMeta } from "../hooks/usePageMeta";
 import { formatDuration } from "../lib/analytics";
 import { wistiaEmbedHtml } from "../lib/wistiaEmbed";
 import TestimonialsSection from "../components/TestimonialsSection";
-import TestimonialProof from "../components/TestimonialProof";
 import TestimonialVideo from "../components/TestimonialVideo";
 
 import calaccept from "../../assets/calaccept.webp";
 import sectionBg from "../../assets/section-bg.jpg";
-import roster from "../../assets/roster.png";
 import logo from "../../assets/primary.svg";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -288,39 +286,20 @@ const Thanks = () => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 mt-12 pb-6 md:pb-8 text-center">
-        <img
-          src={roster}
-          className="mb-10 rounded drop-shadow w-full"
-          alt="Testimonial Roster"
-        />
-
-        <div className="md:bg-slate-100 mx-auto w-fit px-4 sm:px-5 py-2 rounded-full text-xs sm:text-sm text-slate-900 mb-6 font-black tracking-wide flex items-center justify-center gap-2 flex-wrap max-w-full">
-          <span className="text-amber-400 tracking-wider leading-none text-2xl">
-            ★★★★★
-          </span>
-          <span className="uppercase text-lg">
-            Loved by top-producing SA agents
-          </span>
-        </div>
-
-        <h2 className="font-black uppercase max-w-2xl mx-auto text-3xl sm:text-4xl md:text-5xl text-slate-900 leading-tight">
+      {/* Proof — one block, deliberately. This page's job is framing them for
+          the call they already booked, not re-selling them; stacked proof here
+          only pushes the breakout videos further down the page. */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 mt-12 pb-2 text-center">
+        <h2 className="font-black uppercase max-w-2xl mx-auto text-2xl sm:text-3xl text-slate-900 leading-tight">
           What{" "}
           <span className="text-brand underline decoration-4 underline-offset-4">
             Agents
           </span>{" "}
           Say About This System
         </h2>
-
-        <p className="text-slate-900 font-medium text-lg mt-4">
-          Hear from them below
-        </p>
       </section>
 
       <TestimonialsSection />
-
-      <TestimonialProof />
 
       {/* Why EstateKit / Who It's For Section */}
       <section className="bg-slate-900 text-white py-12 sm:py-16 px-4 sm:px-6">
