@@ -34,14 +34,22 @@ export default function ApplicationWidget({
   description,
   onComplete,
   onBook,
+  /**
+   * Rebooking an existing lead: they already applied and already passed the
+   * score, so the application is skipped entirely and the calendar is the
+   * whole page. Shape: { firstName, lastName, email, phone }.
+   */
+  rebookFor = null,
 }) {
-  const [stage, setStage] = useState(STAGE.IDENTITY);
+  const [stage, setStage] = useState(
+    rebookFor ? STAGE.DONE : STAGE.IDENTITY,
+  );
   const [country, setCountry] = useState(COUNTRIES[0]);
   const [form, setForm] = useState({
-    phone: COUNTRIES[0].dial,
-    firstName: "",
-    lastName: "",
-    email: "",
+    phone: rebookFor?.phone || COUNTRIES[0].dial,
+    firstName: rebookFor?.firstName || "",
+    lastName: rebookFor?.lastName || "",
+    email: rebookFor?.email || "",
   });
   const [answers, setAnswers] = useState({});
   const [errors, setErrors] = useState({});
@@ -59,7 +67,8 @@ export default function ApplicationWidget({
   // A lead below the threshold never sees the calendar. Their details are
   // still recorded — they're a follow-up if their status changes, not a
   // 45-minute slot we can't deliver against.
-  const rejected = formDone && outcome !== null && !outcome.qualified;
+  const rejected =
+    !rebookFor && formDone && outcome !== null && !outcome.qualified;
 
   // A lead who finished the application but never picked a time is a callable
   // follow-up, not a lost cause, so they get reported on the way out and land
@@ -71,7 +80,8 @@ export default function ApplicationWidget({
   useEffect(() => {
     const flush = () => {
       const s = exitState.current;
-      if (exitSent.current) return;
+      // A rebooking lead is already on the sheet; they are not a drop-off.
+      if (rebookFor || exitSent.current) return;
 
       // A name or a reachable number is enough to call them back, so we take
       // whatever they got as far as typing rather than waiting for a complete
@@ -107,7 +117,7 @@ export default function ApplicationWidget({
       window.removeEventListener("pagehide", flush);
       document.removeEventListener("visibilitychange", onHidden);
     };
-  }, []);
+  }, [rebookFor]);
 
   // Availability is public, so it can be pulled the moment the widget mounts —
   // by the time they finish the application the calendar is already populated.
@@ -219,10 +229,14 @@ export default function ApplicationWidget({
         name: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
-        q1: scored.breakdown[0]?.answer || "",
-        q2: scored.breakdown[1]?.answer || "",
-        score: scored.score,
-        qualified: scored.qualified,
+        // A rebook never re-asks the questions, so there is nothing to score.
+        // Sending a 0 here would stamp "Qualified: No" on a lead who already
+        // passed; blank plus the rebook flag is the honest version.
+        q1: rebookFor ? "" : scored.breakdown[0]?.answer || "",
+        q2: rebookFor ? "" : scored.breakdown[1]?.answer || "",
+        score: rebookFor ? "" : scored.score,
+        qualified: rebookFor ? "" : scored.qualified,
+        rebook: Boolean(rebookFor),
       });
       // Set synchronously, not via state: the redirect below fires pagehide
       // before React has committed, and a booked lead must not also be
@@ -245,7 +259,7 @@ export default function ApplicationWidget({
     } catch (err) {
       setBooking({ busy: false, error: err.message, done: null });
     }
-  }, [slots, date, slot, form, answers, onBook]);
+  }, [slots, date, slot, form, answers, onBook, rebookFor]);
 
   return (
     <div
@@ -257,17 +271,20 @@ export default function ApplicationWidget({
           className="bg-white min-[520px]:border min-[520px]:rounded-lg"
           style={{ borderColor: LINE }}
         >
-          {/* Step tabs */}
-          <div
-            className="flex flex-wrap gap-2 justify-center border-b px-4 py-4 min-[900px]:flex-row min-[900px]:space-x-4 min-[900px]:py-[10px]"
-            style={{ borderColor: LINE }}
-          >
-            <Tab active={!formDone} done={formDone} label="Fill out the form" />
-            {!rejected && <Tab active={formDone} label="Book your event" />}
-          </div>
+          {/* Step tabs. A rebook has only one step, so there's nothing to show. */}
+          {!rebookFor && (
+            <div
+              className="flex flex-wrap gap-2 justify-center border-b px-4 py-4 min-[900px]:flex-row min-[900px]:space-x-4 min-[900px]:py-[10px]"
+              style={{ borderColor: LINE }}
+            >
+              <Tab active={!formDone} done={formDone} label="Fill out the form" />
+              {!rejected && <Tab active={formDone} label="Book your event" />}
+            </div>
+          )}
 
           <div className="mx-0 min-[900px]:flex">
             {/* ── Left: the application ─────────────────────────────── */}
+            {!rebookFor && (
             <div className="w-full max-w-[520px] min-[520px]:max-w-[480px] px-5 pt-5 min-[900px]:w-[404px] min-[900px]:p-6 pb-10">
               <h1
                 className="font-semibold text-[18px] sm:text-[20px] leading-6 break-words"
@@ -439,11 +456,12 @@ export default function ApplicationWidget({
                 </form>
               )}
             </div>
+            )}
 
             {/* ── Right: the calendar ───────────────────────────────── */}
             <div
               ref={calendarRef}
-              className="px-5 flex-1 min-w-0 scroll-mt-4 md:px-6 md:pr-[24px] md:pb-6 min-[900px]:border-l"
+              className={`px-5 flex-1 min-w-0 scroll-mt-4 md:px-6 md:pr-[24px] md:pb-6 ${rebookFor ? "" : "min-[900px]:border-l"}`}
               style={{ borderColor: LINE }}
             >
               {rejected ? (

@@ -25,7 +25,14 @@ var EMAIL_DOC_ID = "1RYZQgt8DY00DZiZPi1ATKaeNivUufHro4XR0BXpFOrc";
 var FROM_NAME = "Kieran | EstateKit";
 var VIDEOS_LINK = "https://estatekit.co/thank-you";
 var CALL_LINK = "SET ME"; // Meet or Zoom room used for the discovery call
-var REBOOK_LINK = "https://estatekit.co/pitch";
+
+/**
+ * Calendar-only page, not the pitch page: a lead moving a time has already
+ * applied and already passed the score, so sending them back through the
+ * questions is friction for no gain. Their details ride along in the query
+ * string so /rebook shows nothing but the calendar.
+ */
+var REBOOK_LINK = "https://estatekit.co/rebook";
 
 /** Breakout videos, in the order we'd rather they watched them. */
 var BREAKOUT_NAMES = [
@@ -94,8 +101,8 @@ function sendPreCallEmails() {
     var bookedHoursBefore = bookedAt instanceof Date
       ? (start.getTime() - bookedAt.getTime()) / 3600000
       : 999;
-    var showed = String(row[11] || "").trim();
-
+    // No no-show email by design: a missed call is a phone call, not an
+    // automated nudge. Nothing fires once the appointment time has passed.
     var due = 0;
     if (bookedAt instanceof Date && (now - bookedAt.getTime()) / 60000 <= 70) {
       due = 1;
@@ -106,8 +113,6 @@ function sendPreCallEmails() {
       due = 3;
     } else if (hoursOut >= 1 && hoursOut <= 3) {
       due = 4;
-    } else if (hoursOut < -0.75 && hoursOut > -3 && showed !== "Yes") {
-      due = 5;
     }
 
     if (!due) continue;
@@ -117,6 +122,9 @@ function sendPreCallEmails() {
     try {
       var lead = {
         name: firstName(row[2]),
+        fullName: String(row[2] || ""),
+        email: email,
+        phone: String(row[3] || ""),
         start: start,
         unwatched: pickUnwatched(row[9]),
       };
@@ -200,8 +208,20 @@ function fill(template, lead) {
     .replace(/\[day\]/g, Utilities.formatDate(lead.start, tz, "EEEE"))
     .replace(/\[time\]/g, timeLabel(lead.start, tz))
     .replace(/\[call link\]/g, CALL_LINK)
+    .replace(/\[rebook link\]/g, rebookUrl(lead))
     .replace(/\[link\]/g, VIDEOS_LINK)
     .replace(/\[unwatched\]/g, lead.unwatched);
+}
+
+/**
+ * Carries their details so /rebook renders the calendar with no form. Must
+ * run before [link] is substituted, since [rebook link] contains it.
+ */
+function rebookUrl(lead) {
+  return REBOOK_LINK +
+    "?name=" + encodeURIComponent(lead.fullName || "") +
+    "&email=" + encodeURIComponent(lead.email || "") +
+    "&phone=" + encodeURIComponent(lead.phone || "");
 }
 
 /** "2:30pm", not "14:30". */

@@ -10,6 +10,7 @@ import TrainingThanks from "./pages/TrainingThanks";
 import JuaniResults from "./pages/JuaniResults";
 import SakhileResults from "./pages/SakhileResults";
 import Results from "./pages/Results";
+import Rebook from "./pages/Rebook";
 
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
       <Route path="/pitch" element={<PitchVSL />} />
       <Route path="/results" element={<Results />} />
       <Route path="/thank-you" element={<Thanks />} />
+      <Route path="/rebook" element={<Rebook />} />
       <Route path="/training" element={<Training />} />
       <Route path="/training-vsl" element={<Training />} />
       <Route path="/training/thank-you" element={<TrainingThanks />} />
