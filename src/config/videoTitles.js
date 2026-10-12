@@ -7,21 +7,21 @@
  */
 export const VIDEO_TITLES = {
   // Testimonials
-  qgus1atule: "Juani M. — 11 listings, 1 closed deal",
-  "98bvd7qirv": "Nielen B. — 4 mandates in 35 days",
-  "5u31s8now8": "Sakhile K. — 3 sole mandates in 3 weeks",
-  ahm5osiwq8: "Lebogang M. — 12 appointments in 6 days",
+  qgus1atule: "Juani",
+  "98bvd7qirv": "Nielen",
+  "5u31s8now8": "Sakhile",
+  ahm5osiwq8: "Lebogang",
 
   // Sales videos
-  z6oqli7c8o: "Pitch VSL",
-  d5t4u6pqqp: "Booking details (thank-you)",
+  z6oqli7c8o: "pitch VSL",
+  d5t4u6pqqp: "booking details",
 
   // Thank-you page objection breakouts
-  j6su0ot613: "Objection — aren't you just another agency",
-  "2o1u6hnr93": "Objection — will this work in my area",
-  "7sajw5e6lw": "Objection — what does this cost",
-  "6ptgqaxm2w": "Objection — what if it doesn't work",
-  ol57vm4r9a: "Objection — what do you actually do",
+  j6su0ot613: "another agency?",
+  "2o1u6hnr93": "my area?",
+  "7sajw5e6lw": "cost?",
+  "6ptgqaxm2w": "if it fails?",
+  ol57vm4r9a: "what you do?",
 };
 
 export function videoTitle(mediaId, fallback) {

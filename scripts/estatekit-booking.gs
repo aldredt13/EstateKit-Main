@@ -36,6 +36,65 @@ var DAY_END_HOUR = 17; // last slot must END by this hour
 var WORK_DAYS = [1, 2, 3, 4, 5]; // Mon–Fri
 var CACHE_SECONDS = 15; // short enough to read as live, long enough to absorb a burst
 
+/** Where a broken booking system shouts. Swap for a dedicated #alerts hook. */
+var ALERT_WEBHOOK = "https://discord.com/api/webhooks/1559251256273276939/LfnomQcmfdc4tkyliaRFmgb--lnR0v36Hr5LxkOS1Mh735KiYClhZG0naByP_-Am1eWH";
+
+// ── Failure alerts ─────────────────────────────────────────────────────────
+
+/**
+ * A booking backend that fails quietly is worse than one that fails loudly:
+ * the calendar just stays empty and nobody finds out until Friday. Every
+ * caught error routes through here.
+ *
+ * Throttled per location, because a quota breach or an expired auth fails on
+ * every single request and would otherwise post hundreds of identical cards.
+ * Never throws: an alert that breaks the thing it's reporting on is useless.
+ */
+function notifyFailure(where, err, extra) {
+  try {
+    var cache = CacheService.getScriptCache();
+    var key = "alerted_" + where;
+    if (cache.get(key)) return;
+    cache.put(key, "1", 600); // one alert per location per 10 minutes
+
+    var fields = [
+      { name: "Where", value: String(where), inline: true },
+      { name: "When", value: new Date().toUTCString(), inline: true },
+      { name: "Error", value: String(err).slice(0, 1000), inline: false },
+    ];
+    if (extra) {
+      fields.push({ name: "Detail", value: String(extra).slice(0, 1000), inline: false });
+    }
+
+    UrlFetchApp.fetch(ALERT_WEBHOOK, {
+      method: "post",
+      contentType: "application/json",
+      muteHttpExceptions: true,
+      payload: JSON.stringify({
+        content: "@everyone booking backend error",
+        allowed_mentions: { parse: ["everyone"] },
+        embeds: [{
+          title: "🚨 EstateKit booking backend failed",
+          description:
+            "A lead may have just been unable to book. Check the Apps Script " +
+            "executions log.",
+          color: 0xef4444,
+          fields: fields,
+          timestamp: new Date().toISOString(),
+        }],
+      }),
+    });
+  } catch (e) {
+    // Nothing useful left to do; swallow so the caller still responds.
+  }
+}
+
+/** Run once by hand after deploying, to prove the alert path works. */
+function testAlert() {
+  CacheService.getScriptCache().remove("alerted_manual-test");
+  notifyFailure("manual-test", "This is a test, nothing is broken.");
+}
+
 // ── Entry points ───────────────────────────────────────────────────────────
 
 /**
@@ -62,6 +121,7 @@ function doGet(e) {
       payload = { ok: true, slots: getSlots() };
     }
   } catch (err) {
+    notifyFailure(p.action === "book" ? "doGet/book" : "doGet/slots", err, p.payload);
     payload = { ok: false, error: String(err), slots: {} };
   }
 
@@ -71,10 +131,24 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  var lock = LockService.getScriptLock();
-  lock.waitLock(25000);
+  var body;
+  var lock = null;
   try {
-    var body = JSON.parse(e.postData.contents);
+    body = JSON.parse(e.postData.contents);
+
+    // Only take the lock for writes that can actually collide. A burst of
+    // pageviews from an ad landing would otherwise queue 40-deep behind a
+    // 25-second wait and the stragglers would simply fail.
+    var needsLock =
+      body.type === "booking" ||
+      body.type === "dropoff" ||
+      body.type === "engagement";
+
+    if (needsLock) {
+      lock = LockService.getScriptLock();
+      lock.waitLock(25000);
+    }
+
     var out = { ok: true };
 
     if (body.type === "booking") out = createBooking(body);
@@ -87,11 +161,12 @@ function doPost(e) {
       JSON.stringify(out),
     ).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
+    notifyFailure("doPost/" + ((body && body.type) || "unknown"), err);
     return ContentService.createTextOutput(
       JSON.stringify({ ok: false, error: String(err) }),
     ).setMimeType(ContentService.MimeType.JSON);
   } finally {
-    lock.releaseLock();
+    if (lock) lock.releaseLock();
   }
 }
 
@@ -217,6 +292,9 @@ var LEAD_HEADERS = [
   "PPRA status", "Transactions (6mo)", "Score", "Qualified",
   "Breakout videos played", "Reached", "Showed", "Outcome",
   "Deal value", "Notes",
+  // Written by estatekit-emails.gs. A comma-list like "1,3,4" of which
+  // pre-call emails have gone out, so a re-run can't double-send.
+  "Emails sent",
 ];
 
 var DEFAULT_DEAL_VALUE = 3000;
@@ -255,24 +333,67 @@ function recordDropoff(d) {
   var sheet = ss.getSheetByName(NO_SHOWS);
   if (!sheet) sheet = buildNotBooked(ss);
 
-  sheet.insertRowBefore(2);
-  sheet.getRange(2, 1, 1, 9).setValues([[
-    new Date(), d.name || "", d.phone || "", (d.email || "").toLowerCase(),
-    d.q1 || "", d.q2 || "", d.score == null ? "" : d.score,
-    d.qualified ? "Yes" : "No", "",
+  var phone = String(d.phone || "").replace(/\D/g, "");
+  var email = String(d.email || "").toLowerCase().trim();
+
+  var row = findDropoffRow(sheet, phone, email);
+  var fresh = !row;
+
+  // A lead who bails, comes back and bails again is one person, not three
+  // rows — and the later visit usually has more filled in. Partial capture
+  // makes this common, so the match updates in place.
+  if (fresh) {
+    sheet.insertRowBefore(2);
+    row = 2;
+  }
+
+  var existing = sheet.getRange(row, 1, 1, 10).getValues()[0];
+  var keep = function (incoming, current) {
+    return incoming === "" || incoming == null ? current || "" : incoming;
+  };
+
+  sheet.getRange(row, 1, 1, 10).setValues([[
+    new Date(),
+    keep(d.name || "", existing[1]),
+    keep(d.phone || "", existing[2]),
+    keep(email, existing[3]),
+    keep(d.q1 || "", existing[4]),
+    keep(d.q2 || "", existing[5]),
+    keep(d.score === "" || d.score == null ? "" : d.score, existing[6]),
+    keep(d.qualified === "" || d.qualified == null
+      ? "" : (d.qualified ? "Yes" : "No"), existing[7]),
+    keep(d.reached || "", existing[8]),
+    existing[9] || "",
   ]]);
-  sheet.getRange(2, 1).setNumberFormat('dddd h:mm am/pm');
-  sheet.getRange(2, 9).setDataValidation(
+
+  sheet.getRange(row, 1).setNumberFormat('dddd h:mm am/pm');
+  sheet.getRange(row, 10).setDataValidation(
     SpreadsheetApp.newDataValidation()
       .requireValueInList(["Not yet", "Called", "Booked later", "Dead"], true)
       .setAllowInvalid(false).build());
 
-  bumpTraffic(5);
+  if (fresh) bumpTraffic(5);
+}
+
+/** Matches on digits-only phone or email; returns 0 when it's a new lead. */
+function findDropoffRow(sheet, phone, email) {
+  var last = sheet.getLastRow();
+  if (last < 2 || (!phone && !email)) return 0;
+
+  var rows = sheet.getRange(2, 2, last - 1, 3).getValues();
+  for (var i = 0; i < rows.length; i++) {
+    var rowPhone = String(rows[i][1] || "").replace(/\D/g, "");
+    var rowEmail = String(rows[i][2] || "").toLowerCase().trim();
+    if (phone && rowPhone && rowPhone === phone) return i + 2;
+    if (email && rowEmail && rowEmail === email) return i + 2;
+  }
+  return 0;
 }
 
 var NOT_BOOKED_HEADERS = [
   "When", "Name", "Phone", "Email", "PPRA status",
-  "Transactions (6mo)", "Score", "Qualified", "Followed up",
+  "Transactions (6mo)", "Score", "Qualified", "How far they got",
+  "Followed up",
 ];
 
 function buildNotBooked(ss) {
@@ -284,7 +405,7 @@ function buildNotBooked(ss) {
     .setWrap(true).setVerticalAlignment("middle");
   sheet.setFrozenRows(1);
   sheet.setRowHeight(1, 40);
-  var w = [150, 150, 130, 210, 190, 140, 60, 80, 120];
+  var w = [150, 150, 130, 210, 190, 140, 60, 80, 150, 120];
   for (var i = 0; i < w.length; i++) sheet.setColumnWidth(i + 1, w[i]);
   return sheet;
 }
@@ -334,7 +455,7 @@ function setupBookingSheet() {
   sheet.setFrozenColumns(3);
   sheet.setRowHeight(1, 40);
 
-  var widths = [150, 160, 150, 130, 210, 190, 140, 60, 80, 280, 85, 70, 110, 110, 300];
+  var widths = [150, 160, 150, 130, 210, 190, 140, 60, 80, 280, 85, 70, 110, 110, 300, 90];
   for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
 
   SpreadsheetApp.getUi().alert(

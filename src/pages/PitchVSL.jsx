@@ -285,20 +285,6 @@ const PitchVSL = () => {
       <footer className="bg-blue-950 text-white py-5 px-4 sm:px-6 text-center">
         <div className="max-w-3xl mx-auto">
           {/* Heading */}
-          <h2 className="text-2xl  font-black mb-5 tracking-wide">
-            Book Your Free Discovery Call
-          </h2>
-
-          {/* CTA Button */}
-          <button
-            type="button"
-            onClick={handleCtaClick}
-            className="inline-block w-11/12 mx-auto sm:w-auto bg-brand text-white font-bold px-3 sm:px-5 md:px-6 py-4 md:py-5 rounded uppercase tracking-wide hover:shadow-lg transition-shadow z-10"
-          >
-            <p className="leading-none font-black tracking-normal text-2xl">
-              SEE HOW WE DID IT
-            </p>
-          </button>
 
           {/* Disclaimer Section */}
           <div className="pt-8 text-xs sm:text-sm leading-relaxed text-slate-300 space-y-4">

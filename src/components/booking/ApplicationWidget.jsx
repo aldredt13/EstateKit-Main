@@ -67,25 +67,32 @@ export default function ApplicationWidget({
   // live values without re-registering on every keystroke.
   const exitState = useRef({});
   const exitSent = useRef(false);
-  useEffect(() => {
-    exitState.current = { formDone, form, answers };
-  }, [formDone, form, answers]);
 
   useEffect(() => {
     const flush = () => {
       const s = exitState.current;
-      if (!s.formDone || exitSent.current) return;
+      if (exitSent.current) return;
+
+      // A name or a reachable number is enough to call them back, so we take
+      // whatever they got as far as typing rather than waiting for a complete
+      // form. Everything past that is a bonus, and scoreAnswers handles a
+      // partial answer map.
+      const name = `${s.form.firstName.trim()} ${s.form.lastName.trim()}`.trim();
+      const reachable = s.localDigits.length >= 7;
+      if (!name && !reachable) return;
+
       exitSent.current = true;
 
       const scored = scoreAnswers(s.answers);
       reportDropoff({
-        name: `${s.form.firstName.trim()} ${s.form.lastName.trim()}`.trim(),
+        name,
         email: s.form.email.trim(),
-        phone: s.form.phone.trim(),
+        phone: reachable ? s.form.phone.trim() : "",
         q1: scored.breakdown[0]?.answer || "",
         q2: scored.breakdown[1]?.answer || "",
-        score: scored.score,
-        qualified: scored.qualified,
+        score: scored.breakdown.length ? scored.score : "",
+        qualified: scored.breakdown.length ? scored.qualified : "",
+        reached: s.formDone ? "Completed form" : "Abandoned part-way",
       });
     };
 
@@ -132,6 +139,13 @@ export default function ApplicationWidget({
     () => form.phone.replace(/\D/g, "").replace(/^0+/, ""),
     [form.phone],
   );
+
+  // Kept next to localDigits rather than up with the other refs: the exit
+  // handler reads this snapshot, so it has to be written after every value
+  // it depends on exists.
+  useEffect(() => {
+    exitState.current = { formDone, form, answers, localDigits };
+  }, [formDone, form, answers, localDigits]);
 
   /** Messages, not just red borders — a silent rejection is a dead end. */
   const validate = () => {

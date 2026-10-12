@@ -183,15 +183,16 @@ export function useVisitTracking({
       const videoStats = configRef.current.getVideoStats?.();
       const { score, band } = scoreEngagement({ seconds, video: videoStats });
 
+      // Deliberately terse — this lands in a spreadsheet cell a closer scans
+      // at a glance, so it's time plus which videos, nothing else. The band is
+      // already the Score column and the per-video percentages still go to
+      // Discord in full under "Watch Detail".
       beaconToSheet("engagement", {
         email: attendeeData.email,
         score,
         detail: [
-          band,
           formatDuration(seconds),
-          videoStats?.summary
-            ? `watched ${videoStats.summary}`
-            : "no video played",
+          videoStats?.titles?.length ? videoStats.titles.join(", ") : "no video",
         ].join(" · "),
       });
 

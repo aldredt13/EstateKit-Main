@@ -23,18 +23,21 @@ var TRAFFIC_HEADERS = [
 
 /**
  * Our funnel end to end. Every rate is the conversion between two adjacent
- * steps and every cost is spend over that step, so a bad number points at the
- * exact stage that caused it.
+ * steps, so a bad number points at the exact stage that caused it.
+ *
+ * No spend, cost-per or ROAS columns: Meta Ads Manager owns spend and already
+ * computes cost per result against it. Duplicating it here means typing the
+ * number in twice and trusting whichever copy was updated last.
  */
 var KPI_HEADERS = [
-  "Date", "Ad spend",
+  "Date",
   "Pageviews", "Form starts", "Start rate",
-  "Applications", "Completion rate", "Cost / application",
-  "Qualified", "Qualified %", "Cost / qualified", "Avg score",
-  "Booked", "Booked % of qual.", "Cost / booking",
-  "Reached", "Showed", "Show rate", "Cost / show",
-  "Closed", "Close rate", "Cost / client",
-  "Revenue", "Profit", "ROAS",
+  "Applications", "Completion rate",
+  "Qualified", "Qualified %", "Avg score",
+  "Booked", "Booked % of qual.",
+  "Reached", "Showed", "Show rate",
+  "Closed", "Close rate",
+  "Revenue",
 ];
 
 // ── Traffic counters (called from estatekit-booking.gs) ────────────────────
@@ -126,18 +129,13 @@ function buildKpis(ss) {
 
   for (var r = 2; r < 2 + DAYS; r++) writeKpiFormulas(sheet, r);
 
-  var money = [2, 8, 11, 15, 19, 22, 23, 24];
-  for (var m = 0; m < money.length; m++) {
-    sheet.getRange(2, money[m], DAYS, 1).setNumberFormat("R#,##0");
-  }
-  var pct = [5, 7, 10, 14, 18, 21];
+  sheet.getRange(2, 17, DAYS, 1).setNumberFormat("R#,##0");
+
+  var pct = [4, 6, 8, 11, 14, 16];
   for (var p = 0; p < pct.length; p++) {
     sheet.getRange(2, pct[p], DAYS, 1).setNumberFormat("0.0%");
   }
-  sheet.getRange(2, 25, DAYS, 1).setNumberFormat('0.00"x"');
 
-  // Ad spend is the only cell you type into.
-  sheet.getRange(2, 2, DAYS, 1).setBackground("#FFF2CC");
   sheet.setColumnWidth(1, 95);
   for (var c = 2; c <= KPI_HEADERS.length; c++) sheet.setColumnWidth(c, 95);
 }
@@ -148,15 +146,13 @@ function buildKpis(ss) {
  */
 function writeKpiFormulas(sheet, r) {
   var d = "A" + r;
-  var spend = "B" + r;
-  var views = "C" + r;
-  var starts = "D" + r;
-  var apps = "F" + r;
-  var qualified = "I" + r;
-  var booked = "M" + r;
-  var showed = "Q" + r;
-  var closed = "T" + r;
-  var revenue = "W" + r;
+  var views = "B" + r;
+  var starts = "C" + r;
+  var apps = "E" + r;
+  var qualified = "G" + r;
+  var booked = "J" + r;
+  var showed = "M" + r;
+  var closed = "O" + r;
 
   // Column A holds a full timestamp, so a day is a half-open range.
   var onDay =
@@ -174,37 +170,30 @@ function writeKpiFormulas(sheet, r) {
       "," + test + ")";
   };
 
-  sheet.getRange(r, 3).setFormula(fromTraffic("B"));
-  sheet.getRange(r, 4).setFormula(fromTraffic("C"));
-  sheet.getRange(r, 5).setFormula(safe(starts, views));
+  sheet.getRange(r, 2).setFormula(fromTraffic("B"));
+  sheet.getRange(r, 3).setFormula(fromTraffic("C"));
+  sheet.getRange(r, 4).setFormula(safe(starts, views));
 
-  sheet.getRange(r, 6).setFormula("=COUNTIFS(" + onDay + ")");
-  sheet.getRange(r, 7).setFormula(safe(apps, starts));
-  sheet.getRange(r, 8).setFormula(safe(spend, apps));
+  sheet.getRange(r, 5).setFormula("=COUNTIFS(" + onDay + ")");
+  sheet.getRange(r, 6).setFormula(safe(apps, starts));
 
-  sheet.getRange(r, 9).setFormula(countWhere("I", '"Yes"'));
-  sheet.getRange(r, 10).setFormula(safe(qualified, apps));
-  sheet.getRange(r, 11).setFormula(safe(spend, qualified));
-  sheet.getRange(r, 12).setFormula(
+  sheet.getRange(r, 7).setFormula(countWhere("I", '"Yes"'));
+  sheet.getRange(r, 8).setFormula(safe(qualified, apps));
+  sheet.getRange(r, 9).setFormula(
     '=IFERROR(IF(COUNTIFS(' + onDay + ',Closer!$H:$H,">0")=0,"",' +
     'AVERAGEIFS(Closer!$H:$H,' + onDay + ',Closer!$H:$H,">0")),"")');
 
   // A booked lead is one with an appointment time; a drop-off leaves B blank.
-  sheet.getRange(r, 13).setFormula(countWhere("B", '"<>"'));
-  sheet.getRange(r, 14).setFormula(safe(booked, qualified));
-  sheet.getRange(r, 15).setFormula(safe(spend, booked));
+  sheet.getRange(r, 10).setFormula(countWhere("B", '"<>"'));
+  sheet.getRange(r, 11).setFormula(safe(booked, qualified));
 
-  sheet.getRange(r, 16).setFormula(countWhere("K", '"Yes"'));
-  sheet.getRange(r, 17).setFormula(countWhere("L", '"Yes"'));
-  sheet.getRange(r, 18).setFormula(safe(showed, booked));
-  sheet.getRange(r, 19).setFormula(safe(spend, showed));
+  sheet.getRange(r, 12).setFormula(countWhere("K", '"Yes"'));
+  sheet.getRange(r, 13).setFormula(countWhere("L", '"Yes"'));
+  sheet.getRange(r, 14).setFormula(safe(showed, booked));
 
-  sheet.getRange(r, 20).setFormula(countWhere("M", '"Won"'));
-  sheet.getRange(r, 21).setFormula(safe(closed, showed));
-  sheet.getRange(r, 22).setFormula(safe(spend, closed));
+  sheet.getRange(r, 15).setFormula(countWhere("M", '"Won"'));
+  sheet.getRange(r, 16).setFormula(safe(closed, showed));
 
-  sheet.getRange(r, 23).setFormula(
+  sheet.getRange(r, 17).setFormula(
     "=SUMIFS(Closer!$N:$N," + onDay + ',Closer!$M:$M,"Won")');
-  sheet.getRange(r, 24).setFormula('=IFERROR(' + revenue + "-" + spend + ',"")');
-  sheet.getRange(r, 25).setFormula(safe(revenue, spend));
 }
