@@ -9,7 +9,7 @@
  */
 
 const DEFAULT_SHEETS_ENDPOINT =
-  "https://script.google.com/macros/s/AKfycbzJ6gwrZKc5JEfzFLyaDiraZegLbkOqRDSngT86S42pAyvzeijCU77nBDoHGXlBeC4HkQ/exec";
+  "https://script.google.com/macros/s/AKfycbzSvn6zpdwiyfiEcOo93uyHsDfIp9o3edJXJ90yRj1PqXYkrBJ9qFZsrCdJ7PiGw55n5w/exec";
 
 export const SHEETS_ENDPOINT =
   import.meta.env.VITE_SHEETS_ENDPOINT || DEFAULT_SHEETS_ENDPOINT;
