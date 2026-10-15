@@ -210,14 +210,35 @@ function getSlots() {
   return out;
 }
 
-/** Every busy interval across the booking calendar and the blockers. */
+/**
+ * Every busy interval across the booking calendar and the blockers.
+ *
+ * A calendar this account cannot see returns null, and skipping it quietly
+ * would make it read as completely free, so a lead could book straight over
+ * a real appointment with no error anywhere. That is the likeliest fault
+ * after moving the script to a different Google account, so an unreadable
+ * calendar shouts instead: fatal for the booking calendar, because nothing
+ * can be written without it, and a Discord alert for a blocker.
+ */
 function collectBusy(from, to) {
   var ids = [CAL_ID].concat(BUSY_CALENDARS);
   var busy = [];
 
   for (var i = 0; i < ids.length; i++) {
     var cal = CalendarApp.getCalendarById(ids[i]);
-    if (!cal) continue;
+    if (!cal) {
+      if (ids[i] === CAL_ID) {
+        throw new Error(
+          "Booking calendar is not readable by " +
+          Session.getEffectiveUser().getEmail() + ". Share it with that " +
+          "account, with 'Make changes to events'.");
+      }
+      notifyFailure("calendar-unreadable",
+        "Cannot read " + ids[i] + " as " +
+        Session.getEffectiveUser().getEmail() +
+        ". It reads as free, so double-booking is possible until it is shared.");
+      continue;
+    }
     var events = cal.getEvents(from, to);
     for (var j = 0; j < events.length; j++) {
       if (events[j].isAllDayEvent()) continue;
