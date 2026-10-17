@@ -33,12 +33,34 @@ const json = (body: unknown, status = 200) =>
   });
 
 /**
+ * The label shown on the lead card, e.g. "appt - Sun 19 Oct, 10:45am".
+ *
  * track_appointment() is a BEFORE trigger that nulls appointment_at unless
  * the stage is Booked and next_label starts with "appt", copying the value
  * from reminder_at. Setting appointment_at directly does nothing, so the
- * prefix here is load-bearing rather than cosmetic.
+ * prefix is load-bearing rather than cosmetic. Everything after it is free
+ * text, which is where the time goes.
+ *
+ * Formatted by hand rather than with Intl: South Africa is UTC+2 all year
+ * with no daylight saving, so the offset is fixed, and this does not then
+ * depend on the edge runtime shipping full timezone data.
  */
-const BOOKED_LABEL = "appt - 45 min discovery call";
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+function bookedLabel(at: Date): string {
+  const sast = new Date(at.getTime() + 2 * 3600000);
+  const hours = sast.getUTCHours();
+  const suffix = hours < 12 ? "am" : "pm";
+  const hour12 = hours % 12 === 0 ? 12 : hours % 12;
+  const minutes = String(sast.getUTCMinutes()).padStart(2, "0");
+
+  return `appt - ${DAYS[sast.getUTCDay()]} ${sast.getUTCDate()} ` +
+    `${MONTHS[sast.getUTCMonth()]}, ${hour12}:${minutes}${suffix}`;
+}
 
 interface Body {
   pageId?: string;
@@ -135,10 +157,15 @@ Deno.serve(async (req: Request) => {
     fb_ad_id: attribution.ad_id ?? null,
     quality: body.disqualified ? "weak" : "good",
     due: true,
+    // Someone archived is hidden from the pipeline. If they come back and
+    // apply or book again they are a live lead, so the row has to surface
+    // again. Without this the update lands on a hidden card and the booking
+    // looks like it never arrived.
+    archived: false,
     ...(booked
       ? {
         stage: "Booked",
-        next_label: BOOKED_LABEL,
+        next_label: bookedLabel(booked),
         reminder_at: booked.toISOString(),
         // Drives the "Call time" workflows: the reminder email to the lead,
         // the 15-minute warning, and the missed-call check.
