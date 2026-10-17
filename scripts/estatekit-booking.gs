@@ -31,16 +31,22 @@ var CAL_ID = "ac1d5b1bbbf21211adaadcbf04fcd48c8c34cdae4650758e2c8121de18747f40@g
  * Calendars that only block time out. They never receive the event, they
  * just stop a lead booking over something already in the diary.
  *
- * Both need sharing with the account running this script before they count.
- * Until then collectBusy posts a Discord alert naming the one it cannot see,
- * rather than treating a calendar it cannot read as an empty one.
+ * Empty on purpose. "Main" and the personal calendar were listed here but
+ * were never shared with the account this script runs as, so every run
+ * warned that it could not read them. A calendar only counts once it is
+ * both listed here AND shared, so listing an unshared one buys nothing but
+ * the alert.
+ *
+ * Availability is therefore whatever "secondary" says. Anything booked
+ * elsewhere does not block a slot. To change that: share the calendar with
+ * the script account, add its id below, then run acceptCalendars().
+ *
+ *   // "Main"
+ *   "dbee8d5019e1c19b69d7e1a2f27968195adfa23a947a6db2078bbd4f2a03cf54@group.calendar.google.com",
+ *   // "Low Quality", the personal calendar
+ *   "ousebk@gmail.com",
  */
-var BUSY_CALENDARS = [
-  // "Main"
-  "dbee8d5019e1c19b69d7e1a2f27968195adfa23a947a6db2078bbd4f2a03cf54@group.calendar.google.com",
-  // "Low Quality", the personal calendar
-  "ousebk@gmail.com",
-];
+var BUSY_CALENDARS = [];
 
 var SLOT_MINUTES = 45;
 var GAP_MINUTES = 60; // an hour clear after every call

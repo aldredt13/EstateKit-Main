@@ -4,14 +4,12 @@
 export const CAL_ID =
   "ac1d5b1bbbf21211adaadcbf04fcd48c8c34cdae4650758e2c8121de18747f40@group.calendar.google.com";
 
-/** Calendars that only block time. They never receive the event. */
-export const BUSY_CALENDARS = [
-  CAL_ID,
-  // "Main"
-  "dbee8d5019e1c19b69d7e1a2f27968195adfa23a947a6db2078bbd4f2a03cf54@group.calendar.google.com",
-  // "Low Quality", the personal calendar
-  "ousebk@gmail.com",
-];
+/**
+ * Only the booking calendar. The blockers were dropped: they were never
+ * shared with the script account, so they read as empty and only produced
+ * a warning on every run. Add one back by sharing it first.
+ */
+export const BUSY_CALENDARS = [CAL_ID];
 
 export const SLOT_MINUTES = 45;
 export const GAP_MINUTES = 60;
