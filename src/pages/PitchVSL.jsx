@@ -78,7 +78,7 @@ const PitchVSL = () => {
     const email = form.email.trim();
     const name = `${form.firstName} ${form.lastName}`.trim();
 
-    postActivity("booked", {
+    const card = postActivity("booked", {
       who: name,
       fields: {
         When: new Date(start).toLocaleString(undefined, {
@@ -98,13 +98,17 @@ const PitchVSL = () => {
     // Booked with the appointment time. The dashboard's own triggers take it
     // from there: reminders to Kieran before the call, and the follow-up
     // after it.
-    submitFunnelLead({
+    const lead = submitFunnelLead({
       name,
       phone: form.phone.trim(),
       email,
       answers: toFormAnswers(scoreAnswers(answers).breakdown),
       startsAt: new Date(start).toISOString(),
+      keepalive: true,
     });
+
+    // Returned so the widget can wait for both before it redirects.
+    return Promise.all([card, lead]);
   }, []);
 
   // Every CTA points at the one form. Rather than opening a second copy of it

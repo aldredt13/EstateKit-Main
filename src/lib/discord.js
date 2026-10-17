@@ -34,42 +34,4 @@ export async function postDiscordEmbed(embed, { username, url, content } = {}) {
   }
 }
 
-/**
- * Fire-and-forget embed post that survives page unload.
- *
- * Sent as multipart/form-data with a `payload_json` part: that content type is
- * CORS-safelisted, so sendBeacon can dispatch it without a preflight it would
- * be unable to perform. A plain fetch here is routinely killed mid-flight when
- * the document goes away.
- */
-export function beaconDiscordEmbed(embed, { username } = {}) {
-  try {
-    const body = new FormData();
-    body.append("payload_json", JSON.stringify({ username, embeds: [embed] }));
 
-    if (!navigator.sendBeacon?.(DISCORD_WEBHOOK_URL, body)) {
-      postDiscordEmbed(embed, { username });
-    }
-  } catch {
-    postDiscordEmbed(embed, { username });
-  }
-}
-
-/**
- * Simple event logger — turns a flat {label: value} object into inline
- * embed fields. Used by the booking/registration funnels. See
- * useVisitTracking for the richer engagement-tracking embeds used on the
- * thank-you pages.
- */
-export async function logToDiscord(event, data, { username, color = 0x0086ff } = {}) {
-  const fields = Object.entries(data).map(([name, value]) => ({
-    name,
-    value: String(value ?? "—"),
-    inline: true,
-  }));
-
-  await postDiscordEmbed(
-    { title: event, color, fields, timestamp: new Date().toISOString() },
-    { username },
-  );
-}

@@ -9,7 +9,6 @@ import WistiaPlayer from "../components/WistiaPlayer";
 import Cal from "@calcom/embed-react";
 import { useCalBooking } from "../hooks/useCalBooking";
 import { usePageMeta } from "../hooks/usePageMeta";
-import { logToDiscord } from "../lib/discord";
 import logo from "../../assets/secondary.svg";
 import reslogo from "../../assets/RES.png";
 import { FaTimes } from "react-icons/fa";
@@ -38,19 +37,8 @@ const PitchRES = () => {
       const whatsappLink = `https://wa.me/264852878236?text=Hi%20${encodeURIComponent(
         name.split(" ")[0],
       )}%20(re:%20${encodeURIComponent(e.detail.data.eventType.title)})`;
-
-      logToDiscord("🎉 New Booking", {
-        name: name.substring(0, 20),
-        email: email.substring(0, 3) + "...@" + email.split("@")[1],
-        time: startTime,
-        type: e.detail.data.eventType.title,
-        whatsapp: `[DM User](${whatsappLink})`,
-      });
     },
     onBookingFailed: (e) => {
-      logToDiscord("❌ Booking Failed", {
-        error: e.detail.data.message.substring(0, 30) + "...",
-      });
     },
   });
 

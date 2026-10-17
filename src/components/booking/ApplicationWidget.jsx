@@ -260,7 +260,17 @@ export default function ApplicationWidget({
       // written to the "Not booked" tab.
       exitSent.current = true;
       setBooking({ busy: false, error: null, done: result });
-      onBook?.({ date, time: slot, start: match.start, form, answers, result });
+      // Awaited, not fired and forgotten. The redirect below tears the page
+      // down, and an in-flight request dies with it — which is exactly why
+      // bookings were reaching the calendar but never the dashboard.
+      await onBook?.({
+        date,
+        time: slot,
+        start: match.start,
+        form,
+        answers,
+        result,
+      });
 
       // Hand off to the thank-you page, which owns the confirmation content
       // and the engagement tracking. Params match what it already parses.

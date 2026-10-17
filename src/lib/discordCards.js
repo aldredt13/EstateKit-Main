@@ -28,6 +28,7 @@ export const ACTIVITY = {
   viewed: { title: "👀 Landing page viewed", color: 0x94a3b8 },
   started: { title: "▶️ Started the form", color: 0x3b82f6 },
   reached: { title: "✍️ Reached contact details", color: 0xf59e0b },
+  played: { title: "🎬 Played a video", color: 0x8b5cf6 },
   booked: { title: "🌱 Booked a call", color: 0x22c55e },
   disqualified: { title: "🚫 Lead disqualified", color: 0xef4444 },
   dropped: { title: "🚪 Did not book", color: 0x6b7280 },
@@ -87,12 +88,17 @@ export function postActivity(kind, { who, fields = {}, note, link } = {}) {
     timestamp: new Date().toISOString(),
   };
 
-  // Bookings are the one event worth interrupting people for.
+  // A booking goes to both: the activity feed so the funnel reads end to end
+  // in one place, and its own channel with a ping because it's the only event
+  // anyone has to act on.
   if (kind === "booked") {
-    return postDiscordEmbed(embed, {
-      url: BOOKINGS_WEBHOOK,
-      content: "@everyone",
-    });
+    return Promise.all([
+      postDiscordEmbed(embed),
+      postDiscordEmbed(embed, {
+        url: BOOKINGS_WEBHOOK,
+        content: "@everyone",
+      }),
+    ]);
   }
   return postDiscordEmbed(embed);
 }

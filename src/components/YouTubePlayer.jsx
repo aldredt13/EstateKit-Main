@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { postActivity } from "../lib/discordCards";
 import { FaPlay } from "react-icons/fa";
 
 /**
@@ -9,30 +10,11 @@ import { FaPlay } from "react-icons/fa";
 export default function YouTubePlayer({ videoId, title = "YouTube video" }) {
   const [playing, setPlaying] = useState(false);
 
-  const handlePlayClick = async () => {
+  const handlePlayClick = () => {
     setPlaying(true);
-
-    try {
-      await fetch(
-        "https://discord.com/api/webhooks/1403151508287127582/ReH3dRhqmN2pGoslGMFgIE30aj4xQymtHCMmn3Di4XmdjNpxPL5SlmROkWpM9nwAch64",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content: `Video played: ${title}`,
-            embeds: [
-              {
-                title: title,
-                url: `https://youtube.com/watch?v=${videoId}`,
-                color: 3447003,
-              },
-            ],
-          }),
-        },
-      );
-    } catch (error) {
-      console.error("Discord notification failed:", error);
-    }
+    // Reported through the shared activity card rather than a webhook of its
+    // own, so every play in the funnel reads the same in the feed.
+    postActivity("played", { fields: { Video: title } });
   };
 
   if (playing) {

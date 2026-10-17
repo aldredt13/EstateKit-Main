@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { videoTitle } from "../config/videoTitles";
-import { postDiscordEmbed } from "../lib/discord";
+import { postActivity } from "../lib/discordCards";
 import { formatDuration } from "../lib/analytics";
 
 /**
@@ -46,16 +46,14 @@ export function useVideoTracking({ viewer } = {}) {
       const after = Math.round((Date.now() - startedAtRef.current) / 1000);
       plays.set(id, { name, count: 1, maxPercent: 0, firstPlayedAfter: after });
 
-      postDiscordEmbed({
-        title: `▶️ Played · ${name}`,
-        color: 0x0086ff,
-        description: [
-          viewerRef.current ? `**${viewerRef.current}**` : null,
-          `Started ${formatDuration(after)} after landing · video ${plays.size} this visit`,
-        ]
-          .filter(Boolean)
-          .join("\n"),
-        timestamp: new Date().toISOString(),
+      // Only that they tapped it, not how far they got. Watch depth still
+      // rides along to the dashboard note at the end of the visit.
+      postActivity("played", {
+        who: viewerRef.current || undefined,
+        fields: {
+          Video: name,
+          "After": formatDuration(after),
+        },
       });
     };
 

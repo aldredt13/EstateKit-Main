@@ -120,7 +120,7 @@ const TrainingThanks = () => {
     noindex: true,
   });
 
-  const { attendeeData, logToDiscord } = useVisitTracking({
+  const { attendeeData } = useVisitTracking({
     viewEvent: "🎓 Training Reservation Page Viewed",
     stillOnPageEvent: (secs) => `⏱️ Still on page — ${formatDuration(secs)}`,
     leftPageEvent: "🚪 Left the Page",
@@ -152,11 +152,6 @@ const TrainingThanks = () => {
       `https://wa.me/${attendeeData.phone || TRAINING_WHATSAPP_FALLBACK_NUMBER}?text=${encodeURIComponent(message)}`,
       "_blank",
     );
-
-    logToDiscord("✅ WhatsApp Confirmed", {
-      "👤 Name": attendeeData.name || "Unknown",
-      "📞 Phone": attendeeData.phone || "Not provided",
-    });
   };
 
   return (
