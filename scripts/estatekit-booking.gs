@@ -124,7 +124,21 @@ function acceptCalendars() {
     }
   }
 
-  SpreadsheetApp.getUi().alert(report.join("\n"));
+  say(report.join("\n"));
+}
+
+/**
+ * Shows a result both ways. A popup needs the script to be bound to a
+ * spreadsheet, which this one no longer has any other reason to be, so the
+ * log is the reliable copy and the popup is a convenience when it works.
+ */
+function say(message) {
+  Logger.log(message);
+  try {
+    SpreadsheetApp.getUi().alert(message);
+  } catch (e) {
+    // Standalone script, or run from the editor rather than the sheet.
+  }
 }
 
 /** Run once by hand after deploying, to prove the alert path works. */
