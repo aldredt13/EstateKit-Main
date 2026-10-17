@@ -10,7 +10,8 @@ import WistiaPlayer from "../components/WistiaPlayer";
 import { usePageMeta } from "../hooks/usePageMeta";
 import { useVideoTracking } from "../hooks/useVideoTracking";
 import { postActivity } from "../lib/discordCards";
-import { postToSheet } from "../lib/sheets";
+import { submitFunnelLead, toFormAnswers } from "../lib/dashboard";
+import { scoreAnswers } from "../config/qualifyingQuestions";
 import { formatDuration } from "../lib/analytics";
 import heroBg from "../../assets/training-hero-bg.webp";
 import logo from "../../assets/primary.svg";
@@ -24,8 +25,7 @@ const PitchVSL = () => {
   const inlineRef = useRef(null);
 
   useEffect(() => {
-    arrivedAtRef.current = Date.now();
-    postToSheet("pageview", {});
+    arrivedAtRef.current = Date.now();
   }, []);
 
   const getEngagement = useCallback(
@@ -59,24 +59,21 @@ const PitchVSL = () => {
         },
       });
 
-      postToSheet("submission", {
+      // Lands on the dashboard as a New Lead in the EstateKit Agents
+      // pipeline, which fires the confirmation email and the agent ping.
+      submitFunnelLead({
         name: result.contact.name,
-        email: result.contact.email,
         phone: result.contact.phone,
-        area: result.answers.area || "",
-        ppra: result.breakdown[0]?.answer || "",
-        deals: result.breakdown[2]?.answer || "",
-        timeline: result.breakdown[3]?.answer || "",
-        score: result.score,
-        band: result.band,
-        qualified: result.qualified,
+        email: result.contact.email,
+        answers: toFormAnswers(result.breakdown),
+        disqualified: !result.qualified,
       });
     },
     [getEngagement],
   );
 
   /** Booking now happens in-page, so it reports from here rather than Cal. */
-  const handleBooked = useCallback(({ start, form }) => {
+  const handleBooked = useCallback(({ start, form, answers }) => {
     const email = form.email.trim();
     const name = `${form.firstName} ${form.lastName}`.trim();
 
@@ -96,7 +93,17 @@ const PitchVSL = () => {
       link: `https://wa.me/${form.phone.replace(/\D/g, "")}`,
     });
 
-    postToSheet("booking", { email, startTime: start });
+    // Updates the same dashboard row the application created, moving it to
+    // Booked with the appointment time. The dashboard's own triggers take it
+    // from there: reminders to Kieran before the call, and the follow-up
+    // after it.
+    submitFunnelLead({
+      name,
+      phone: form.phone.trim(),
+      email,
+      answers: toFormAnswers(scoreAnswers(answers).breakdown),
+      startsAt: new Date(start).toISOString(),
+    });
   }, []);
 
   // Every CTA points at the one form. Rather than opening a second copy of it

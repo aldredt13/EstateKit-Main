@@ -6,7 +6,8 @@ import {
   QUALIFYING_QUESTIONS,
   scoreAnswers,
 } from "../../config/qualifyingQuestions";
-import { createBooking, fetchSlots, reportDropoff } from "../../lib/bookingApi";
+import { createBooking, fetchSlots } from "../../lib/bookingApi";
+import { submitFunnelLead, toFormAnswers } from "../../lib/dashboard";
 
 const INK = "rgb(31, 42, 55)";
 const MUTED = "rgba(31, 42, 55, 0.733)";
@@ -83,26 +84,25 @@ export default function ApplicationWidget({
       // A rebooking lead is already on the sheet; they are not a drop-off.
       if (rebookFor || exitSent.current) return;
 
-      // A name or a reachable number is enough to call them back, so we take
-      // whatever they got as far as typing rather than waiting for a complete
-      // form. Everything past that is a bonus, and scoreAnswers handles a
-      // partial answer map.
+      // The dashboard requires both a name and a number, so a lead who only
+      // got as far as one of them cannot be recorded. Everything past that
+      // is a bonus, and scoreAnswers copes with a partial answer map.
       const name = `${s.form.firstName.trim()} ${s.form.lastName.trim()}`.trim();
       const reachable = s.localDigits.length >= 7;
-      if (!name && !reachable) return;
+      if (!name || !reachable) return;
 
       exitSent.current = true;
 
       const scored = scoreAnswers(s.answers);
-      reportDropoff({
+      submitFunnelLead({
         name,
+        phone: s.form.phone.trim(),
         email: s.form.email.trim(),
-        phone: reachable ? s.form.phone.trim() : "",
-        q1: scored.breakdown[0]?.answer || "",
-        q2: scored.breakdown[1]?.answer || "",
-        score: scored.breakdown.length ? scored.score : "",
-        qualified: scored.breakdown.length ? scored.qualified : "",
-        reached: s.formDone ? "Completed form" : "Abandoned part-way",
+        answers: toFormAnswers(scored.breakdown),
+        disqualified: scored.breakdown.length > 0 && !scored.qualified,
+        // No startsAt: they never picked a time, so they land as a New Lead
+        // for Kieran to work rather than as a booked appointment.
+        keepalive: true,
       });
     };
 

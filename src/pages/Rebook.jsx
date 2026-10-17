@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import ApplicationWidget from "../components/booking/ApplicationWidget";
 import { usePageMeta } from "../hooks/usePageMeta";
 import { postActivity } from "../lib/discordCards";
+import { submitFunnelLead } from "../lib/dashboard";
 import logo from "../../assets/primary.svg";
 
 /**
@@ -47,6 +48,15 @@ const Rebook = () => {
         Type: "Rebooked an existing call",
       },
       link: form.phone ? `https://wa.me/${form.phone.replace(/\D/g, "")}` : "",
+    });
+
+    // Matches the existing dashboard row on phone number, so moving a time
+    // updates the lead rather than creating a duplicate card.
+    submitFunnelLead({
+      name: `${form.firstName} ${form.lastName}`.trim(),
+      phone: form.phone.trim(),
+      email: form.email.trim(),
+      startsAt: new Date(start).toISOString(),
     });
   }, []);
 
