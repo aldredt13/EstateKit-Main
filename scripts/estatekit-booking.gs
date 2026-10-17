@@ -92,6 +92,41 @@ function notifyFailure(where, err, extra) {
   }
 }
 
+/**
+ * Run once by hand after the calendars have been shared with this account.
+ *
+ * Sharing a calendar only grants permission. Until the account also
+ * subscribes to it, getCalendarById returns null and the calendar reads as
+ * though it does not exist, which is indistinguishable from "not shared".
+ * Normally you accept by clicking a link in an invitation email; this does
+ * the same thing without the email hunt.
+ */
+function acceptCalendars() {
+  var ids = [CAL_ID].concat(BUSY_CALENDARS);
+  var me = Session.getEffectiveUser().getEmail();
+  var report = ["Running as: " + me, ""];
+
+  for (var i = 0; i < ids.length; i++) {
+    var id = ids[i];
+    try {
+      if (CalendarApp.getCalendarById(id)) {
+        report.push("already readable: " + id);
+        continue;
+      }
+      CalendarApp.subscribeToCalendar(id);
+      report.push(
+        CalendarApp.getCalendarById(id)
+          ? "subscribed: " + id
+          : "STILL UNREADABLE, check the share: " + id,
+      );
+    } catch (err) {
+      report.push("FAILED " + id + " -> " + err);
+    }
+  }
+
+  SpreadsheetApp.getUi().alert(report.join("\n"));
+}
+
 /** Run once by hand after deploying, to prove the alert path works. */
 function testAlert() {
   CacheService.getScriptCache().remove("alerted_manual-test");
