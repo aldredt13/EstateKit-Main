@@ -8,7 +8,7 @@ import {
   scoreEngagement,
 } from "../lib/analytics";
 import { postDiscordEmbed } from "../lib/discord";
-import { beaconToSheet, postToSheet } from "../lib/sheets";
+import { submitFunnelLead } from "../lib/dashboard";
 
 const CHECKPOINTS = [30, 60, 120, 180, 300]; // seconds
 
@@ -127,17 +127,6 @@ export function useVisitTracking({
     });
   }, []);
 
-  // Cal redirects here the instant a booking confirms, which kills any request
-  // the pitch page had in flight. The redirect params are the reliable record,
-  // so the booking is reported from this side instead.
-  useEffect(() => {
-    if (!attendeeData.email || !attendeeData.bookingUid) return;
-    postToSheet("booking", {
-      email: attendeeData.email,
-      startTime: attendeeData.time || "",
-    });
-  }, [attendeeData]);
-
   useEffect(() => {
     const { viewEvent, stillOnPageEvent, leftPageEvent, onMount } = configRef.current;
     const startTime = Date.now();
@@ -183,14 +172,15 @@ export function useVisitTracking({
       const videoStats = configRef.current.getVideoStats?.();
       const { score, band } = scoreEngagement({ seconds, video: videoStats });
 
-      // Deliberately terse — this lands in a spreadsheet cell a closer scans
-      // at a glance, so it's time plus which videos, nothing else. The band is
-      // already the Score column and the per-video percentages still go to
-      // Discord in full under "Watch Detail".
-      beaconToSheet("engagement", {
+      // Deliberately terse — this becomes one line on the lead's note in the
+      // dashboard, which Kieran skims before dialling. The band and the
+      // per-video percentages still go to Discord in full.
+      submitFunnelLead({
+        name: attendeeData.name || "Lead",
+        phone: attendeeData.phone || "",
         email: attendeeData.email,
-        score,
-        detail: [
+        keepalive: true,
+        engagement: [
           formatDuration(seconds),
           videoStats?.titles?.length ? videoStats.titles.join(", ") : "no video",
         ].join(" · "),

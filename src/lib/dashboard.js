@@ -61,6 +61,9 @@ function readAttribution() {
  * @param {boolean} [lead.disqualified] - lands as quality "weak"
  * @param {string} [lead.startsAt] - ISO start of the booked call. Omit for
  *   someone who filled the form but never picked a time.
+ * @param {string} [lead.engagement] - what they watched, written to the lead's
+ *   note. Sent on its own it updates nothing else on the row, so it cannot
+ *   reset a booking or re-fire its workflows.
  * @param {boolean} [lead.keepalive] - for sends during page unload
  */
 export async function submitFunnelLead({
@@ -70,6 +73,7 @@ export async function submitFunnelLead({
   answers = [],
   disqualified = false,
   startsAt,
+  engagement,
   keepalive = false,
 }) {
   try {
@@ -86,6 +90,7 @@ export async function submitFunnelLead({
         attribution: readAttribution(),
         disqualified,
         startsAt: startsAt || null,
+        engagement: engagement || null,
       }),
     });
 

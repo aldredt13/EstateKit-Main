@@ -51,6 +51,25 @@ interface Body {
   disqualified?: boolean;
   /** ISO start of the booked call. Absent means they never picked a time. */
   startsAt?: string | null;
+  /**
+   * What they watched before the call, for the lead's note. Sent on its own
+   * from the thank-you page, so a note-only call updates nothing else.
+   */
+  engagement?: string | null;
+}
+
+/** Marks the line this function owns, so Kieran's own notes survive. */
+const ENGAGEMENT_MARKER = "Watched before the call:";
+
+function mergeNote(existing: string, engagement: string): string {
+  const kept = String(existing || "")
+    .split("\n")
+    .filter((line) => !line.startsWith(ENGAGEMENT_MARKER))
+    .join("\n")
+    .trim();
+
+  const line = `${ENGAGEMENT_MARKER} ${engagement}`;
+  return kept ? `${line}\n${kept}` : line;
 }
 
 Deno.serve(async (req: Request) => {
@@ -144,7 +163,7 @@ Deno.serve(async (req: Request) => {
 
   const { data: candidates } = await db
     .from("leads")
-    .select("id, phone")
+    .select("id, phone, note")
     .eq("pipeline_id", page.pipeline_id)
     .order("created_at", { ascending: false })
     .limit(2000);
@@ -152,6 +171,21 @@ Deno.serve(async (req: Request) => {
   const existing = needle.length >= 7
     ? (candidates ?? []).find((c) => tail(String(c.phone ?? "")) === needle)
     : undefined;
+
+  // An engagement report arrives after the call is already booked, so it must
+  // only touch the note. Rewriting the row would reset the stage and re-fire
+  // the workflows the booking already started.
+  if (body.engagement) {
+    if (!existing) return json({ error: "no matching lead" }, 404);
+
+    const { error } = await db
+      .from("leads")
+      .update({ note: mergeNote(String(existing.note ?? ""), body.engagement) })
+      .eq("id", existing.id);
+
+    if (error) return json({ error: error.message }, 500);
+    return json({ id: existing.id, updated: true, noteOnly: true });
+  }
 
   const result = existing
     ? await db.from("leads").update(row).eq("id", existing.id).select("id")

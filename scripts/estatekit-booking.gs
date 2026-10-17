@@ -1,10 +1,13 @@
 /**
  * EstateKit booking backend — Google Calendar + Sheet, no third party.
  * =====================================================================
- * Paste into the bound Apps Script of the tracking sheet, alongside
- * estatekit-sheet.gs, then redeploy (Deploy > Manage deployments > Edit >
- * New version). This file owns doGet and doPost; delete those two functions
- * from estatekit-sheet.gs so they don't collide.
+ * The only job left here is Google Calendar: which times are free, and
+ * writing the event when someone books. Leads, follow-up emails and
+ * reporting all live in the client dashboard now, so there is no spreadsheet
+ * and no doPost.
+ *
+ * Paste as the only file in the Apps Script project, then redeploy
+ * (Deploy > Manage deployments > Edit > New version).
  *
  * Why JSONP for reads: an Apps Script web app sends no
  * Access-Control-Allow-Origin header, so a browser can POST to it blind but
@@ -128,46 +131,6 @@ function doGet(e) {
   return ContentService.createTextOutput(
     cb + "(" + JSON.stringify(payload) + ");",
   ).setMimeType(ContentService.MimeType.JAVASCRIPT);
-}
-
-function doPost(e) {
-  var body;
-  var lock = null;
-  try {
-    body = JSON.parse(e.postData.contents);
-
-    // Only take the lock for writes that can actually collide. A burst of
-    // pageviews from an ad landing would otherwise queue 40-deep behind a
-    // 25-second wait and the stragglers would simply fail.
-    var needsLock =
-      body.type === "booking" ||
-      body.type === "dropoff" ||
-      body.type === "engagement";
-
-    if (needsLock) {
-      lock = LockService.getScriptLock();
-      lock.waitLock(25000);
-    }
-
-    var out = { ok: true };
-
-    if (body.type === "booking") out = createBooking(body);
-    else if (body.type === "dropoff") recordDropoff(body);
-    else if (body.type === "pageview") bumpTraffic(2);
-    else if (body.type === "form_start") bumpTraffic(3);
-    else if (body.type === "engagement") recordEngagement(body);
-
-    return ContentService.createTextOutput(
-      JSON.stringify(out),
-    ).setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    notifyFailure("doPost/" + ((body && body.type) || "unknown"), err);
-    return ContentService.createTextOutput(
-      JSON.stringify({ ok: false, error: String(err) }),
-    ).setMimeType(ContentService.MimeType.JSON);
-  } finally {
-    if (lock) lock.releaseLock();
-  }
 }
 
 // ── Availability ───────────────────────────────────────────────────────────
@@ -298,188 +261,8 @@ function createBooking(d) {
   );
 
   CacheService.getScriptCache().remove("slots");
-  recordBookingRow(d, start);
 
+  // No row is written here. The site posts the lead to the dashboard, which
+  // owns the record and every follow-up that comes off it.
   return { ok: true, eventId: event.getId() };
-}
-
-// ── Sheet ──────────────────────────────────────────────────────────────────
-
-var LEADS = "Closer";
-var NO_SHOWS = "Not booked"; // filled in the form, never picked a time
-
-var LEAD_HEADERS = [
-  "When they booked", "Booking date and time", "Name", "Phone", "Email",
-  "PPRA status", "Transactions (6mo)", "Score", "Qualified",
-  "Breakout videos played", "Reached", "Showed", "Outcome",
-  "Deal value", "Notes",
-  // Written by estatekit-emails.gs. A comma-list like "1,3,4" of which
-  // pre-call emails have gone out, so a re-run can't double-send.
-  "Emails sent",
-];
-
-var DEFAULT_DEAL_VALUE = 3000;
-
-/** Newest first — new rows go in at the top, not appended. */
-function insertLeadRow(values) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(LEADS);
-  if (!sheet) throw new Error("Run setupBookingSheet() first.");
-
-  sheet.insertRowBefore(2);
-  sheet.getRange(2, 1, 1, values.length).setValues([values]);
-
-  // "Monday 6:26pm" on screen, a real timestamp underneath so it still sorts.
-  sheet.getRange(2, 1).setNumberFormat('dddd h:mm am/pm');
-  sheet.getRange(2, 2).setNumberFormat('ddd d mmm, h:mm am/pm');
-  sheet.getRange(2, 14).setNumberFormat("R#,##0");
-  applyLeadValidation(sheet, 2);
-  return 2;
-}
-
-function recordBookingRow(d, start) {
-  insertLeadRow([
-    new Date(), start, d.name || "", d.phone || "", (d.email || "").toLowerCase(),
-    d.q1 || "", d.q2 || "", d.score == null ? "" : d.score,
-    d.qualified ? "Yes" : "No", "", "", "", "Pending", DEFAULT_DEAL_VALUE, "",
-  ]);
-}
-
-/**
- * A lead who gave their details but never picked a time. Kept on its own tab
- * rather than mixed into Closer — these are a callable follow-up list, not
- * appointments, and the KPI rollup would otherwise count them as bookings.
- */
-function recordDropoff(d) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(NO_SHOWS);
-  if (!sheet) sheet = buildNotBooked(ss);
-
-  var phone = String(d.phone || "").replace(/\D/g, "");
-  var email = String(d.email || "").toLowerCase().trim();
-
-  var row = findDropoffRow(sheet, phone, email);
-  var fresh = !row;
-
-  // A lead who bails, comes back and bails again is one person, not three
-  // rows — and the later visit usually has more filled in. Partial capture
-  // makes this common, so the match updates in place.
-  if (fresh) {
-    sheet.insertRowBefore(2);
-    row = 2;
-  }
-
-  var existing = sheet.getRange(row, 1, 1, 10).getValues()[0];
-  var keep = function (incoming, current) {
-    return incoming === "" || incoming == null ? current || "" : incoming;
-  };
-
-  sheet.getRange(row, 1, 1, 10).setValues([[
-    new Date(),
-    keep(d.name || "", existing[1]),
-    keep(d.phone || "", existing[2]),
-    keep(email, existing[3]),
-    keep(d.q1 || "", existing[4]),
-    keep(d.q2 || "", existing[5]),
-    keep(d.score === "" || d.score == null ? "" : d.score, existing[6]),
-    keep(d.qualified === "" || d.qualified == null
-      ? "" : (d.qualified ? "Yes" : "No"), existing[7]),
-    keep(d.reached || "", existing[8]),
-    existing[9] || "",
-  ]]);
-
-  sheet.getRange(row, 1).setNumberFormat('dddd h:mm am/pm');
-  sheet.getRange(row, 10).setDataValidation(
-    SpreadsheetApp.newDataValidation()
-      .requireValueInList(["Not yet", "Called", "Booked later", "Dead"], true)
-      .setAllowInvalid(false).build());
-
-  if (fresh) bumpTraffic(5);
-}
-
-/** Matches on digits-only phone or email; returns 0 when it's a new lead. */
-function findDropoffRow(sheet, phone, email) {
-  var last = sheet.getLastRow();
-  if (last < 2 || (!phone && !email)) return 0;
-
-  var rows = sheet.getRange(2, 2, last - 1, 3).getValues();
-  for (var i = 0; i < rows.length; i++) {
-    var rowPhone = String(rows[i][1] || "").replace(/\D/g, "");
-    var rowEmail = String(rows[i][2] || "").toLowerCase().trim();
-    if (phone && rowPhone && rowPhone === phone) return i + 2;
-    if (email && rowEmail && rowEmail === email) return i + 2;
-  }
-  return 0;
-}
-
-var NOT_BOOKED_HEADERS = [
-  "When", "Name", "Phone", "Email", "PPRA status",
-  "Transactions (6mo)", "Score", "Qualified", "How far they got",
-  "Followed up",
-];
-
-function buildNotBooked(ss) {
-  var sheet = ss.getSheetByName(NO_SHOWS) || ss.insertSheet(NO_SHOWS);
-  sheet.clear();
-  sheet.getRange(1, 1, 1, NOT_BOOKED_HEADERS.length)
-    .setValues([NOT_BOOKED_HEADERS])
-    .setFontWeight("bold").setBackground("#7C2D12").setFontColor("#FFFFFF")
-    .setWrap(true).setVerticalAlignment("middle");
-  sheet.setFrozenRows(1);
-  sheet.setRowHeight(1, 40);
-  var w = [150, 150, 130, 210, 190, 140, 60, 80, 150, 120];
-  for (var i = 0; i < w.length; i++) sheet.setColumnWidth(i + 1, w[i]);
-  return sheet;
-}
-
-function recordEngagement(d) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(LEADS);
-  if (!sheet || !d.email) return;
-  var last = sheet.getLastRow();
-  if (last < 2) return;
-
-  var emails = sheet.getRange(2, 5, last - 1, 1).getValues();
-  var target = String(d.email).toLowerCase().trim();
-  for (var i = 0; i < emails.length; i++) {
-    if (String(emails[i][0]).toLowerCase().trim() === target) {
-      sheet.getRange(i + 2, 10).setValue(d.detail || "");
-      return;
-    }
-  }
-}
-
-function applyLeadValidation(sheet, row) {
-  var yesNo = SpreadsheetApp.newDataValidation()
-    .requireValueInList(["Yes", "No"], true).setAllowInvalid(false).build();
-  var outcome = SpreadsheetApp.newDataValidation()
-    .requireValueInList(
-      ["Pending", "Won", "Lost", "No-show", "Dropped off", "Rescheduled"], true)
-    .setAllowInvalid(false).build();
-
-  sheet.getRange(row, 11).setDataValidation(yesNo);
-  sheet.getRange(row, 12).setDataValidation(yesNo);
-  sheet.getRange(row, 13).setDataValidation(outcome);
-}
-
-function setupBookingSheet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  buildNotBooked(ss);
-
-  var sheet = ss.getSheetByName(LEADS) || ss.insertSheet(LEADS);
-  sheet.clear();
-  sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns())
-    .clearDataValidations();
-
-  sheet.getRange(1, 1, 1, LEAD_HEADERS.length).setValues([LEAD_HEADERS])
-    .setFontWeight("bold").setBackground("#1F223C").setFontColor("#FFFFFF")
-    .setWrap(true).setVerticalAlignment("middle");
-  sheet.setFrozenRows(1);
-  sheet.setFrozenColumns(3);
-  sheet.setRowHeight(1, 40);
-
-  var widths = [150, 160, 150, 130, 210, 190, 140, 60, 80, 280, 85, 70, 110, 110, 300, 90];
-  for (var i = 0; i < widths.length; i++) sheet.setColumnWidth(i + 1, widths[i]);
-
-  SpreadsheetApp.getUi().alert(
-    "Closer tab rebuilt. Now: Deploy > Manage deployments > Edit > New version.",
-  );
 }

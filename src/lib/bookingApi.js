@@ -1,4 +1,4 @@
-import { SHEETS_ENDPOINT, postToSheet } from "./sheets";
+import { SHEETS_ENDPOINT } from "./sheets";
 
 /**
  * Booking backend: the Apps Script bound to the tracking sheet, which reads
@@ -88,7 +88,3 @@ export async function createBooking(payload) {
   return body;
 }
 
-/** Lead who gave contact details but never reached the calendar. */
-export function reportDropoff(payload) {
-  postToSheet("dropoff", payload);
-}
