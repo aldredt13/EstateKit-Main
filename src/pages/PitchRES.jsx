@@ -6,8 +6,6 @@ import TestimonialsSection from "../components/TestimonialsSection";
 import ProofScreenshots from "../components/ProofScreenshots";
 import Footer from "../components/Footer";
 import WistiaPlayer from "../components/WistiaPlayer";
-import Cal from "@calcom/embed-react";
-import { useCalBooking } from "../hooks/useCalBooking";
 import { usePageMeta } from "../hooks/usePageMeta";
 import logo from "../../assets/secondary.svg";
 import reslogo from "../../assets/RES.png";
@@ -18,10 +16,6 @@ import { FaCircleExclamation } from "react-icons/fa6";
 // ─── Page ────────────────────────────────────────────────────────────────────
 const PitchRES = () => {
   const isVSLPage = location.pathname.includes("vsl");
-  const calNamespace = isVSLPage ? "10listingappts-vsl" : "10listingappts";
-  const calLink = isVSLPage
-    ? "estatekit/10listingappts-vsl"
-    : "estatekit/10listingappts";
 
   usePageMeta({
     title: "For Agents Impacted by the POPI Act | EstateKit",
@@ -30,17 +24,6 @@ const PitchRES = () => {
     path: "/pitch/res",
   });
 
-  useCalBooking({
-    namespace: calNamespace,
-    onBookingSuccessful: (e) => {
-      const { name, email, startTime } = e.detail.data;
-      const whatsappLink = `https://wa.me/264852878236?text=Hi%20${encodeURIComponent(
-        name.split(" ")[0],
-      )}%20(re:%20${encodeURIComponent(e.detail.data.eventType.title)})`;
-    },
-    onBookingFailed: (e) => {
-    },
-  });
 
   return (
     <div className="bg-white text-slate-900 antialiased">
@@ -103,15 +86,8 @@ const PitchRES = () => {
       {/* 3. Copy bridge — leads into the calendar */}
       <CopyBridge />
 
-      {/* 4. Cal.com booking embed */}
-      <div id="book">
-        <Cal
-          namespace={calNamespace}
-          calLink={calLink}
-          style={{ width: "100%", overflow: "scroll", borderRadius: "10px" }}
-          config={{ layout: "month_view", theme: "light" }}
-        />
-      </div>
+      {/* 4. Booking + qualifying application */}
+      <BookingEmbed />
 
       {/* 5. Social proof — agent avatars + count */}
       <SocialProof />

@@ -4,8 +4,10 @@ import "./Webinar.css";
 
 // ── Config, edit these to launch ──────────────────────────────────────────────
 const CONFIG = {
-  // Where every "Schedule A Call" button sends people (your Cal.com link)
-  bookingUrl: "https://cal.com/estatekit/strategy-call",
+  // Where every "Schedule A Call" button sends people. Our own page, not
+  // Cal: it asks the qualifying questions and the booking reaches the
+  // dashboard, which a Cal link never did.
+  bookingUrl: "https://estatekit.co/pitch",
   // Main VSL / explainer video embed url ("" shows a placeholder)
   vslEmbedUrl: "",
   // Testimonial video embed urls per case-study card ("" shows a placeholder)
