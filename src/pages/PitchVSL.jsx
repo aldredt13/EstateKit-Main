@@ -25,7 +25,8 @@ const PitchVSL = () => {
   const inlineRef = useRef(null);
 
   useEffect(() => {
-    arrivedAtRef.current = Date.now();
+    arrivedAtRef.current = Date.now();
+    postActivity("viewed");
   }, []);
 
   const getEngagement = useCallback(
@@ -111,21 +112,27 @@ const PitchVSL = () => {
   // were sent to — the pulse is keyed off a counter so repeat clicks re-fire.
   const handleCtaClick = useCallback(() => {
     inlineRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
 
+  /** First keystroke in the form, which is the real start. */
+  const handleFormStart = useCallback(() => {
     postActivity("started", {
-      who: "Visitor",
       fields: {
-        Action: "Clicked through to the application",
         "On page": formatDuration(
           Math.round((Date.now() - arrivedAtRef.current) / 1000),
         ),
         Videos: getVideoFields()["🎬 Videos Played"] || "None",
       },
     });
+  }, [getVideoFields]);
 
-    if (qualification) return;
-
-  }, [qualification, getVideoFields]);
+  const handleReachedContact = useCallback(({ name, phone }) => {
+    postActivity("reached", {
+      who: name || "Visitor",
+      fields: { Phone: phone },
+      link: phone ? `https://wa.me/${phone.replace(/\D/g, "")}` : undefined,
+    });
+  }, []);
 
   // Land them on the outcome once the quiz resolves.
   useEffect(() => {
@@ -223,6 +230,8 @@ const PitchVSL = () => {
             }
             onComplete={handleComplete}
             onBook={handleBooked}
+            onStart={handleFormStart}
+            onReachedContact={handleReachedContact}
           />
         </section>
         </div>

@@ -43,7 +43,7 @@ var BUSY_CALENDARS = [
 ];
 
 var SLOT_MINUTES = 45;
-var GAP_MINUTES = 10; // breathing room after each call
+var GAP_MINUTES = 60; // an hour clear after every call
 var MIN_NOTICE_HOURS = 24; // 1 day
 var WINDOW_DAYS = 4; // bookable days ahead
 var DAY_START_HOUR = 9;

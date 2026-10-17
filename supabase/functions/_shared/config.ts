@@ -14,7 +14,7 @@ export const BUSY_CALENDARS = [
 ];
 
 export const SLOT_MINUTES = 45;
-export const GAP_MINUTES = 10;
+export const GAP_MINUTES = 60;
 export const MIN_NOTICE_HOURS = 24;
 export const WINDOW_DAYS = 4;
 export const DAY_START_HOUR = 9;

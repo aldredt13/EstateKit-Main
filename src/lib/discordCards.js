@@ -1,9 +1,13 @@
 import { DISCORD_WEBHOOK_URL, postDiscordEmbed } from "./discord";
 
 /**
- * Activity-feed cards, shaped like the EstateKit lead notifications: a status
- * title, a coloured left edge that tells you the event at a glance, and the
- * detail as inline fields rather than a paragraph.
+ * Activity-feed cards, shaped like the ones the client dashboard already
+ * posts for agents: an author line naming the funnel, an emoji title for the
+ * step, a coloured left edge you can read at a glance, then Pipeline, Source
+ * and Page as inline columns with the link underneath.
+ *
+ * Matching that layout matters because these land in the same feed. A card
+ * shaped differently reads as coming from a different system.
  *
  * Bookings go to their own channel and ping, because they're the only event
  * anyone needs to act on immediately.
@@ -12,34 +16,70 @@ import { DISCORD_WEBHOOK_URL, postDiscordEmbed } from "./discord";
 const BOOKINGS_WEBHOOK =
   "https://discord.com/api/webhooks/1559251256273276939/LfnomQcmfdc4tkyliaRFmgb--lnR0v36Hr5LxkOS1Mh735KiYClhZG0naByP_-Am1eWH";
 
+/** What the dashboard calls this funnel, shown on every card. */
+const FUNNEL = {
+  owner: "EstateKit · Kieran Ouseb",
+  pipeline: "EstateKit Agents",
+  page: "Guaranteed Closed Deals",
+  link: "https://estatekit.co/pitch",
+};
+
 export const ACTIVITY = {
+  viewed: { title: "👀 Landing page viewed", color: 0x94a3b8 },
   started: { title: "▶️ Started the form", color: 0x3b82f6 },
-  reached: { title: "🔥 Reached contact details", color: 0xf59e0b },
-  booked: { title: "🌱 New booking", color: 0x22c55e },
+  reached: { title: "✍️ Reached contact details", color: 0xf59e0b },
+  booked: { title: "🌱 Booked a call", color: 0x22c55e },
   disqualified: { title: "🚫 Lead disqualified", color: 0xef4444 },
   dropped: { title: "🚪 Did not book", color: 0x6b7280 },
 };
 
+/** Where the traffic came from, read off the landing URL. */
+function trafficSource() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("ad_id") || q.get("fbclid")) return "Facebook ad";
+    const utm = q.get("utm_source");
+    if (utm) return utm;
+    if (document.referrer) {
+      return new URL(document.referrer).hostname.replace(/^www\./, "");
+    }
+    return "Direct";
+  } catch {
+    return "Direct";
+  }
+}
+
 /**
  * @param {string} kind - key of ACTIVITY
  * @param {object} opts
- * @param {string} opts.who - name shown above the title
- * @param {Record<string,string>} [opts.fields] - rendered as inline columns
+ * @param {string} [opts.who] - the lead, when we know who they are yet
+ * @param {Record<string,string>} [opts.fields] - extra inline columns
  * @param {string} [opts.note] - full-width detail under the fields
- * @param {string} [opts.link]
+ * @param {string} [opts.link] - e.g. a WhatsApp link to the lead
  */
 export function postActivity(kind, { who, fields = {}, note, link } = {}) {
   const meta = ACTIVITY[kind] || ACTIVITY.started;
 
-  const embedFields = Object.entries(fields)
-    .filter(([, v]) => v)
-    .map(([name, value]) => ({ name, value: String(value), inline: true }));
+  // Pipeline / Source / Page first, so every card in the feed lines up.
+  const embedFields = [
+    { name: "Pipeline", value: FUNNEL.pipeline, inline: true },
+    { name: "Source", value: trafficSource(), inline: true },
+    { name: "Page", value: FUNNEL.page, inline: true },
+  ];
+
+  for (const [name, value] of Object.entries(fields)) {
+    if (value) embedFields.push({ name, value: String(value), inline: true });
+  }
 
   if (note) embedFields.push({ name: "Detail", value: note, inline: false });
-  if (link) embedFields.push({ name: "Link", value: link, inline: false });
+  embedFields.push({
+    name: "Link",
+    value: link || FUNNEL.link,
+    inline: false,
+  });
 
   const embed = {
-    author: { name: who ? `${who} · EstateKit` : "EstateKit" },
+    author: { name: who ? `${who} · ${FUNNEL.pipeline}` : FUNNEL.owner },
     title: meta.title,
     color: meta.color,
     fields: embedFields,
@@ -49,7 +89,10 @@ export function postActivity(kind, { who, fields = {}, note, link } = {}) {
 
   // Bookings are the one event worth interrupting people for.
   if (kind === "booked") {
-    return postDiscordEmbed(embed, { url: BOOKINGS_WEBHOOK, content: "@everyone" });
+    return postDiscordEmbed(embed, {
+      url: BOOKINGS_WEBHOOK,
+      content: "@everyone",
+    });
   }
   return postDiscordEmbed(embed);
 }

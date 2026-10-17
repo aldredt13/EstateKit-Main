@@ -52,6 +52,9 @@ export default function BookingCalendar({
   onSelectDate,
   selectedTime,
   onSelectTime,
+  /** Fires the booking. Rendered inline beside the picked time. */
+  onConfirm,
+  confirming = false,
   duration = "1 hour",
   timezoneLabel,
   dimmed = false,
@@ -237,21 +240,41 @@ export default function BookingCalendar({
               pick one
             </p>
 
+            {/* Picking a time splits the row and puts Confirm right beside
+                it, rather than at the foot of the panel. On a phone the
+                bottom of the panel is below the fold, so a button down there
+                reads as "nothing happened" until you scroll to find it. */}
             <div className="space-y-2">
-              {slots.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => onSelectTime?.(t)}
-                  className={`w-full rounded-lg border py-2.5 text-sm font-medium transition-colors ${
-                    selectedTime === t
-                      ? "border-[#1C64F2] bg-[#1C64F2] text-white"
-                      : "border-[#1C64F2] bg-white text-[#1C64F2] hover:bg-[#1C64F2]/5"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
+              {slots.map((t) => {
+                const picked = selectedTime === t;
+                return (
+                  <div key={t} className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onSelectTime?.(t)}
+                      className={`rounded-lg border py-2.5 text-sm font-medium transition-all ${
+                        picked
+                          ? "w-1/2 border-slate-300 bg-slate-100 text-slate-600"
+                          : "w-full border-[#1C64F2] bg-white text-[#1C64F2] hover:bg-[#1C64F2]/5"
+                      }`}
+                    >
+                      {t}
+                    </button>
+
+                    {picked && (
+                      <button
+                        type="button"
+                        onClick={onConfirm}
+                        disabled={confirming}
+                        className="w-1/2 rounded-lg py-2.5 text-sm font-semibold text-white transition-opacity disabled:opacity-75"
+                        style={{ background: "#1C64F2" }}
+                      >
+                        {confirming ? "Booking…" : "Confirm"}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

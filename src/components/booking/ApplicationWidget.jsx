@@ -35,6 +35,10 @@ export default function ApplicationWidget({
   description,
   onComplete,
   onBook,
+  /** First keystroke in the form. Fires once. */
+  onStart,
+  /** Name and number done, moving on to the questions. */
+  onReachedContact,
   /**
    * Rebooking an existing lead: they already applied and already passed the
    * score, so the application is skipped entirely and the calendar is the
@@ -61,7 +65,6 @@ export default function ApplicationWidget({
   const [outcome, setOutcome] = useState(null);
   const emailRef = useRef(null);
   const calendarRef = useRef(null);
-  const confirmRef = useRef(null);
 
   const formDone = stage === STAGE.DONE;
 
@@ -143,7 +146,17 @@ export default function ApplicationWidget({
       ),
     [slots],
   );
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+  // Reported once, on the first keystroke, rather than on the CTA click:
+  // clicking through to the form and actually starting it are different
+  // things, and only the second one is a lead doing something.
+  const startedRef = useRef(false);
+  const set = (k, v) => {
+    if (!startedRef.current && !rebookFor) {
+      startedRef.current = true;
+      onStart?.();
+    }
+    setForm((f) => ({ ...f, [k]: v }));
+  };
 
   const localDigits = useMemo(
     () => form.phone.replace(/\D/g, "").replace(/^0+/, ""),
@@ -182,6 +195,10 @@ export default function ApplicationWidget({
     if (!validate()) return;
 
     if (stage < STAGE.APPLICATION) {
+      onReachedContact?.({
+        name: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
+        phone: form.phone.trim(),
+      });
       setStage(stage + 1);
       // Drop them straight into the next field rather than making them aim.
       requestAnimationFrame(() => emailRef.current?.focus());
@@ -563,15 +580,9 @@ export default function ApplicationWidget({
                       setSlot(null);
                     }}
                     selectedTime={slot}
-                    onSelectTime={(t) => {
-                      setSlot(t);
-                      requestAnimationFrame(() =>
-                        confirmRef.current?.scrollIntoView({
-                          behavior: "smooth",
-                          block: "nearest",
-                        }),
-                      );
-                    }}
+                    onSelectTime={setSlot}
+                    onConfirm={confirm}
+                    confirming={booking.busy}
                     onMonthChange={() => {
                       setDate(null);
                       setSlot(null);
@@ -588,19 +599,6 @@ export default function ApplicationWidget({
                         : "Please fill out the form before choosing your time slot."
                     }
                   />
-
-                  {formDone && date && slot && (
-                    <button
-                      ref={confirmRef}
-                      type="button"
-                      onClick={confirm}
-                      disabled={booking.busy}
-                      className="mb-6 flex h-11 md:h-10 w-full items-center justify-center rounded-lg px-5 text-sm font-medium text-white disabled:opacity-75"
-                      style={{ background: BLUE }}
-                    >
-                      {booking.busy ? "Booking…" : `Confirm ${slot} on ${humanDay(date)}`}
-                    </button>
-                  )}
 
                   {booking.error && (
                     <p className="mb-6 text-center text-sm text-red-500">
