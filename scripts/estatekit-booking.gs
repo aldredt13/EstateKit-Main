@@ -65,12 +65,17 @@ var ALERT_WEBHOOK = "https://discord.com/api/webhooks/1559251256273276939/LfnomQ
  * every single request and would otherwise post hundreds of identical cards.
  * Never throws: an alert that breaks the thing it's reporting on is useless.
  */
-function notifyFailure(where, err, extra) {
+function notifyFailure(where, err, extra, opts) {
   try {
+    var warn = opts && opts.warning;
+
     var cache = CacheService.getScriptCache();
     var key = "alerted_" + where;
     if (cache.get(key)) return;
-    cache.put(key, "1", 600); // one alert per location per 10 minutes
+    // A warning is a standing config gap, not an incident, so it repeats far
+    // less often. Six hours is enough to stay on the radar without becoming
+    // noise you learn to scroll past.
+    cache.put(key, "1", warn ? 21600 : 600);
 
     var fields = [
       { name: "Where", value: String(where), inline: true },
@@ -86,14 +91,18 @@ function notifyFailure(where, err, extra) {
       contentType: "application/json",
       muteHttpExceptions: true,
       payload: JSON.stringify({
-        content: "@everyone booking backend error",
-        allowed_mentions: { parse: ["everyone"] },
+        content: warn ? undefined : "@everyone booking backend error",
+        allowed_mentions: warn ? undefined : { parse: ["everyone"] },
         embeds: [{
-          title: "🚨 EstateKit booking backend failed",
-          description:
-            "A lead may have just been unable to book. Check the Apps Script " +
-            "executions log.",
-          color: 0xef4444,
+          title: warn
+            ? "⚠️ EstateKit booking needs attention"
+            : "🚨 EstateKit booking backend failed",
+          description: warn
+            ? "Bookings are still working. Something is configured in a " +
+              "way that could bite later."
+            : "A lead may have just been unable to book. Check the Apps " +
+              "Script executions log.",
+          color: warn ? 0xf59e0b : 0xef4444,
           fields: fields,
           timestamp: new Date().toISOString(),
         }],
@@ -260,7 +269,9 @@ function collectBusy(from, to) {
       notifyFailure("calendar-unreadable",
         "Cannot read " + ids[i] + " as " +
         Session.getEffectiveUser().getEmail() +
-        ". It reads as free, so double-booking is possible until it is shared.");
+        ". It reads as free, so a lead could book over something already " +
+        "in it. Share it with that account and run acceptCalendars().",
+        null, { warning: true });
       continue;
     }
     var events = cal.getEvents(from, to);
