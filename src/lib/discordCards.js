@@ -20,9 +20,43 @@ const BOOKINGS_WEBHOOK =
 const FUNNEL = {
   owner: "EstateKit · Kieran Ouseb",
   pipeline: "EstateKit Agents",
-  page: "Guaranteed Closed Deals",
-  link: "https://estatekit.co/pitch",
+  link: "https://estatekit.co",
 };
+
+/**
+ * Readable names for the Page column. The path alone is fine to read but
+ * "/pitch/res" tells you less at a glance than "Pitch (RES)" when a dozen
+ * cards are stacked up, and the whole point of the column is skimming.
+ */
+const PAGE_NAMES = {
+  "/": "Home",
+  "/pitch": "Pitch",
+  "/pitch-vsl": "Pitch (VSL)",
+  "/pitch/res": "Pitch (RES)",
+  "/thank-you": "Thank you",
+  "/rebook": "Rebook",
+  "/results": "Results",
+  "/webinar": "Webinar",
+  "/training": "Training",
+  "/training-vsl": "Training (VSL)",
+  "/training/thank-you": "Training thank you",
+  "/juani-results": "Juani results",
+  "/sakhile-results": "Sakhile results",
+};
+
+function pagePath() {
+  try {
+    return window.location.pathname.replace(/\/+$/, "") || "/";
+  } catch {
+    return "/";
+  }
+}
+
+/** Which page the visitor is on right now, named rather than pathed. */
+export function currentPage() {
+  const path = pagePath();
+  return PAGE_NAMES[path] || path;
+}
 
 export const ACTIVITY = {
   viewed: { title: "👀 Landing page viewed", color: 0x94a3b8 },
@@ -65,7 +99,7 @@ export function postActivity(kind, { who, fields = {}, note, link } = {}) {
   const embedFields = [
     { name: "Pipeline", value: FUNNEL.pipeline, inline: true },
     { name: "Source", value: trafficSource(), inline: true },
-    { name: "Page", value: FUNNEL.page, inline: true },
+    { name: "Page", value: currentPage(), inline: true },
   ];
 
   for (const [name, value] of Object.entries(fields)) {
@@ -75,7 +109,7 @@ export function postActivity(kind, { who, fields = {}, note, link } = {}) {
   if (note) embedFields.push({ name: "Detail", value: note, inline: false });
   embedFields.push({
     name: "Link",
-    value: link || FUNNEL.link,
+    value: link || `${FUNNEL.link}${pagePath()}`,
     inline: false,
   });
 

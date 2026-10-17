@@ -26,7 +26,6 @@ const PitchVSL = () => {
 
   useEffect(() => {
     arrivedAtRef.current = Date.now();
-    postActivity("viewed");
   }, []);
 
   const getEngagement = useCallback(
