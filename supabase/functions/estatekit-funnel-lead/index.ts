@@ -144,6 +144,15 @@ Deno.serve(async (req: Request) => {
         // the 15-minute warning, and the missed-call check.
         call_at: booked.toISOString(),
       }
+      : body.disqualified
+      // Marked Lost rather than New Lead so the chase sequence cannot pick
+      // them up. We declined them on the page; following that with four
+      // emails asking them to book would be incoherent. They stay findable
+      // as Lost plus quality "weak" if the bar ever moves.
+      ? {
+        stage: "Lost",
+        next_label: "Did not qualify",
+      }
       : {
         stage: "New Lead",
         next_label: "Filled the form, never picked a time",
