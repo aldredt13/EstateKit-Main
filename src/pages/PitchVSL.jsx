@@ -243,6 +243,7 @@ const PitchVSL = () => {
 
       <SocialProof />
 
+
       {/* 2. Proof — runs before the ask, so the gap is open when it lands */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 mt-8 pb-6 md:pb-8 text-center">
         {/* Pill badge */}

@@ -3,7 +3,7 @@ export default function TestimonialImage({ src, alt, credit }) {
     <figure className="mx-auto">
       <img
         src={src}
-        className="max-w-sm w-full mx-auto h-fit drop-shadow"
+        className="max-w-sm w-full mx-auto h-auto drop-shadow"
         loading="lazy"
         decoding="async"
         alt={

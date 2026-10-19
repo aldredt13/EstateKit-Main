@@ -76,7 +76,7 @@ export default function TestimonialProof({
       <p className="font-bold text-lg sm:text-xl md:text-2xl text-center mb-8">
         {heading}
       </p>
-      <div className="flex flex-wrap gap-2 justify-center">
+      <div className="flex flex-wrap items-start justify-center gap-2">
         {TESTIMONIAL_IMAGES.map((t, i) => (
           <TestimonialImage key={i} {...t} />
         ))}
