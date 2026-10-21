@@ -32,8 +32,14 @@ Deno.serve(async (req: Request) => {
 
   try {
     const now = new Date();
-    const earliest = now.getTime() + MIN_NOTICE_HOURS * 3600000;
     const horizon = new Date(now.getTime() + WINDOW_DAYS * 86400000);
+    // MIN_NOTICE_HOURS used to gate each slot against a raw now+ms cutoff,
+    // which interacts badly with DAY_END_HOUR: evaluated after mid-afternoon,
+    // now+24h lands in the evening of the next day, after the last bookable
+    // slot, silently wiping all of tomorrow every single evening. Notice is
+    // applied in whole calendar days instead, so tomorrow stays fully
+    // available regardless of what time the page loads.
+    const minNoticeDays = Math.ceil(MIN_NOTICE_HOURS / 24);
 
     const [google, booked] = await Promise.all([
       freeBusy(BUSY_CALENDARS, now, horizon),
@@ -57,7 +63,7 @@ Deno.serve(async (req: Request) => {
     const busy = [...google.busy, ...booked];
     const slots: Record<string, string[]> = {};
 
-    for (let day = 0; day <= WINDOW_DAYS; day++) {
+    for (let day = minNoticeDays; day <= WINDOW_DAYS; day++) {
       const dayKey = localDayKey(new Date(now.getTime() + day * 86400000));
       if (!WORK_DAYS.includes(localDayOfWeek(dayKey))) continue;
 
@@ -72,7 +78,6 @@ Deno.serve(async (req: Request) => {
         const start = localInstant(dayKey, m);
         const end = new Date(start.getTime() + SLOT_MINUTES * 60000);
 
-        if (start.getTime() < earliest) continue;
         if (start > horizon) continue;
         if (overlaps(start.getTime(), end.getTime(), busy)) continue;
 

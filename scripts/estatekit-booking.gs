@@ -219,13 +219,20 @@ function getSlots() {
 
   var tz = Session.getScriptTimeZone();
   var now = new Date();
-  var earliest = new Date(now.getTime() + MIN_NOTICE_HOURS * 3600000);
   var horizon = new Date(now.getTime() + WINDOW_DAYS * 86400000);
+
+  // MIN_NOTICE_HOURS used to gate each slot against a raw now+ms cutoff,
+  // which interacts badly with DAY_END_HOUR: evaluated after mid-afternoon,
+  // now+24h lands in the evening of the next day, after the last bookable
+  // slot, silently wiping all of tomorrow every single evening. Notice is
+  // applied in whole calendar days instead, so tomorrow stays fully
+  // available regardless of what time the page loads.
+  var minNoticeDays = Math.ceil(MIN_NOTICE_HOURS / 24);
 
   var busy = collectBusy(now, horizon);
   var out = {};
 
-  for (var day = 0; day <= WINDOW_DAYS; day++) {
+  for (var day = minNoticeDays; day <= WINDOW_DAYS; day++) {
     var d = new Date(now.getTime() + day * 86400000);
     if (WORK_DAYS.indexOf(d.getDay()) === -1) continue;
 
@@ -236,7 +243,7 @@ function getSlots() {
       var start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, h, 0);
       var end = new Date(start.getTime() + SLOT_MINUTES * 60000);
 
-      if (start < earliest || start > horizon) continue;
+      if (start > horizon) continue;
       if (overlapsBusy(start, end, busy)) continue;
 
       slots.push(Utilities.formatDate(start, tz, "yyyy-MM-dd'T'HH:mm:ssXXX"));
