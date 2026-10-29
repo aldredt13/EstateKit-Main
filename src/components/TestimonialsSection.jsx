@@ -6,10 +6,7 @@ const TESTIMONIALS = [
   {
     type: "youtube",
     youtubeId: "RCgG7uPlNKc",
-    // Caption pulled verbatim from the video's own title/oEmbed data, not
-    // invented: real spend and real payout, no agent name was available to
-    // verify so none is claimed here.
-    name: "EstateKit Agent",
+    name: "Naude K.",
     result: "Spent R3,000 on Ads — One Deal Paid R60,000",
   },
   {
