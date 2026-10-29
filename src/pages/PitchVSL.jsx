@@ -158,7 +158,7 @@ const PitchVSL = () => {
       </div>
       {/* 1. Hero — headline + VSL + primary CTA */}
       <section
-        className="relative mx-auto px-4 sm:px-6 pt-5 pb-20 md:pb-22 text-center bg-cover bg-center"
+        className="relative mx-auto px-4 sm:px-6 pt-5 pb-8 md:pb-10 text-center bg-cover bg-center"
         style={{
           backgroundImage: `url(${heroBg})`,
           backgroundPosition: "center",
@@ -183,7 +183,7 @@ const PitchVSL = () => {
 
           <div>
             {/* Headline */}
-            <h1 className="font-semibold text-3xl sm:text-4xl md:text-5xl leading-tight mb-10 mt-5 max-w-5xl mx-auto text-black">
+            <h1 className="font-semibold text-3xl sm:text-4xl md:text-5xl leading-tight mb-6 mt-5 max-w-5xl mx-auto text-black">
               We{" "}
               <span className="text-brand font-black">
                 GUARANTEE{" "}
@@ -212,7 +212,7 @@ const PitchVSL = () => {
         <section
           ref={inlineRef}
           id="qualify"
-          className="scroll-mt-6 sm:px-6 pb-10 md:pb-12"
+          className="scroll-mt-6 sm:px-6 pb-4 md:pb-6"
         >
 
           <ApplicationWidget
