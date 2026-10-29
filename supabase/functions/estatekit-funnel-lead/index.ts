@@ -33,6 +33,85 @@ const json = (body: unknown, status = 200) =>
   });
 
 /**
+ * Server-side half of the Meta Conversions API, sent alongside the browser
+ * pixel rather than instead of it. The browser event can be lost to an ad
+ * blocker, Safari's ITP, or the lead just closing the tab before fbevents.js
+ * finishes loading; this send happens from here regardless, using whatever
+ * the booking write already has.
+ *
+ * Silently skipped until META_CAPI_ACCESS_TOKEN is set as a secret on this
+ * project — generate it in Events Manager under this dataset's settings,
+ * or from a system user in Business Settings with ads_management scope.
+ * Nothing else here depends on it; the lead still saves and every workflow
+ * still fires with no token present, this one send is just a no-op.
+ */
+const META_DATASET_ID = "495369730036515";
+const META_API_VERSION = "v21.0";
+
+async function sha256Hex(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value.trim().toLowerCase());
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+interface CapiEvent {
+  eventName: "Lead" | "Schedule";
+  eventId: string;
+  email?: string | null;
+  phone?: string | null;
+  fbp?: string;
+  fbc?: string;
+  sourceUrl?: string;
+  clientIp?: string | null;
+  userAgent?: string | null;
+}
+
+/** Fire-and-forget: a Meta outage must never fail the lead write it rides on. */
+async function sendMetaCapi(evt: CapiEvent): Promise<void> {
+  const token = Deno.env.get("META_CAPI_ACCESS_TOKEN");
+  if (!token) return;
+
+  try {
+    const userData: Record<string, unknown> = {};
+    if (evt.email) userData.em = [await sha256Hex(evt.email)];
+    if (evt.phone) {
+      userData.ph = [await sha256Hex(evt.phone.replace(/[^0-9]/g, ""))];
+    }
+    if (evt.fbp) userData.fbp = evt.fbp;
+    if (evt.fbc) userData.fbc = evt.fbc;
+    if (evt.clientIp) userData.client_ip_address = evt.clientIp;
+    if (evt.userAgent) userData.client_user_agent = evt.userAgent;
+
+    const res = await fetch(
+      `https://graph.facebook.com/${META_API_VERSION}/${META_DATASET_ID}/events` +
+        `?access_token=${encodeURIComponent(token)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          data: [{
+            event_name: evt.eventName,
+            event_time: Math.floor(Date.now() / 1000),
+            event_id: evt.eventId,
+            action_source: "website",
+            event_source_url: evt.sourceUrl || "https://estatekit.co/pitch",
+            user_data: userData,
+          }],
+        }),
+      },
+    );
+
+    if (!res.ok) {
+      console.error("Meta CAPI send failed", res.status, await res.text());
+    }
+  } catch (err) {
+    console.error("Meta CAPI send failed", err);
+  }
+}
+
+/**
  * The label shown on the lead card, e.g. "appt - Sun 19 Oct, 10:45am".
  *
  * track_appointment() is a BEFORE trigger that nulls appointment_at unless
@@ -78,6 +157,10 @@ interface Body {
    * from the thank-you page, so a note-only call updates nothing else.
    */
   engagement?: string | null;
+  /** From trackLead()/trackSchedule() in src/lib/metaPixel.js. */
+  metaEventId?: string | null;
+  metaEventName?: "Lead" | "Schedule" | null;
+  pageUrl?: string | null;
 }
 
 /** Marks the line this function owns, so Kieran's own notes survive. */
@@ -231,6 +314,23 @@ Deno.serve(async (req: Request) => {
   if (result.error || !result.data) {
     console.error("funnel lead write failed", result.error);
     return json({ error: result.error?.message ?? "write failed" }, 500);
+  }
+
+  // Best-effort, after the row is safely saved: the lead write must succeed
+  // or fail on its own terms, never on whether Meta's API answered.
+  if (body.metaEventId && body.metaEventName) {
+    await sendMetaCapi({
+      eventName: body.metaEventName,
+      eventId: body.metaEventId,
+      email: row.email,
+      phone,
+      fbp: attribution.fbp,
+      fbc: attribution.fbc,
+      sourceUrl: body.pageUrl,
+      clientIp: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+        req.headers.get("cf-connecting-ip"),
+      userAgent: req.headers.get("user-agent"),
+    });
   }
 
   return json({

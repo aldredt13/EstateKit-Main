@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react";
 import { scoreAnswers } from "../config/qualifyingQuestions";
 import { postActivity } from "../lib/discordCards";
 import { submitFunnelLead, toFormAnswers } from "../lib/dashboard";
+import { trackLead, trackSchedule } from "../lib/metaPixel";
 import { formatDuration } from "../lib/analytics";
 
 /**
@@ -71,6 +72,11 @@ export function useFunnelReporting({ getVideoFields } = {}) {
       },
     });
 
+    // Only a qualified lead is a Meta "Lead" event: firing it for someone we
+    // just disqualified would teach ad delivery to find more of exactly the
+    // leads the page turned away.
+    const metaEventId = result.qualified ? trackLead() : undefined;
+
     // Lands on the dashboard, which fires the confirmation and the ping.
     submitFunnelLead({
       name: result.contact.name,
@@ -78,6 +84,8 @@ export function useFunnelReporting({ getVideoFields } = {}) {
       email: result.contact.email,
       answers: toFormAnswers(result.breakdown),
       disqualified: !result.qualified,
+      metaEventId,
+      metaEventName: metaEventId ? "Lead" : undefined,
     });
   }, []);
 
@@ -108,6 +116,8 @@ export function useFunnelReporting({ getVideoFields } = {}) {
       answers: toFormAnswers(scoreAnswers(answers).breakdown),
       startsAt: new Date(start).toISOString(),
       keepalive: true,
+      metaEventId: trackSchedule(),
+      metaEventName: "Schedule",
     });
 
     // Returned so the widget waits for both before it redirects. An
