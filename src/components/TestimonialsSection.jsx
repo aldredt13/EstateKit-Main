@@ -4,6 +4,15 @@ import { JUANI_YOUTUBE_ID, SAKHILE_YOUTUBE_ID } from "../config/trainingConfig";
 
 const TESTIMONIALS = [
   {
+    type: "youtube",
+    youtubeId: "RCgG7uPlNKc",
+    // Caption pulled verbatim from the video's own title/oEmbed data, not
+    // invented: real spend and real payout, no agent name was available to
+    // verify so none is claimed here.
+    name: "EstateKit Agent",
+    result: "Spent R3,000 on Ads — One Deal Paid R60,000",
+  },
+  {
     type: "wistia",
     mediaId: "qgus1atule",
     name: "Juani M. In Boksburg",
