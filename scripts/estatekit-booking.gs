@@ -54,8 +54,7 @@ var MIN_NOTICE_HOURS = 24; // 1 day
 var WINDOW_DAYS = 4; // bookable days ahead
 var DAY_START_HOUR = 9;
 var DAY_END_HOUR = 17; // last slot must END by this hour
-var WORK_DAYS = [1, 2, 3, 4, 5]; // Mon–Fri
-var WORK_DAYS = [1, 2, 3, 4, 5]; // Mon–Fri
+var WORK_DAYS = [0, 1, 2, 3, 4, 5, 6]; // every day, incl. weekends
 var OVERFLOW_MAX_DAYS = 14; // how far past WINDOW_DAYS to search if fully booked
 
 /** Where a broken booking system shouts. Swap for a dedicated #alerts hook. */

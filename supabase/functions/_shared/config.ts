@@ -17,7 +17,7 @@ export const MIN_NOTICE_HOURS = 24;
 export const WINDOW_DAYS = 4;
 export const DAY_START_HOUR = 9;
 export const DAY_END_HOUR = 17; // the last slot must END by this hour
-export const WORK_DAYS = [1, 2, 3, 4, 5]; // Mon-Fri
+export const WORK_DAYS = [0, 1, 2, 3, 4, 5, 6]; // every day, incl. weekends
 export const OVERFLOW_MAX_DAYS = 14; // how far past WINDOW_DAYS to search if fully booked
 
 /**
