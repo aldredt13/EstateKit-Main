@@ -12,12 +12,13 @@ export const CAL_ID =
 export const BUSY_CALENDARS = [CAL_ID];
 
 export const SLOT_MINUTES = 45;
-export const GAP_MINUTES = 60;
+export const GAP_MINUTES = 40;
 export const MIN_NOTICE_HOURS = 24;
 export const WINDOW_DAYS = 4;
 export const DAY_START_HOUR = 9;
 export const DAY_END_HOUR = 17; // the last slot must END by this hour
 export const WORK_DAYS = [1, 2, 3, 4, 5]; // Mon-Fri
+export const OVERFLOW_MAX_DAYS = 14; // how far past WINDOW_DAYS to search if fully booked
 
 /**
  * South Africa and Namibia are both UTC+2 all year with no daylight saving,

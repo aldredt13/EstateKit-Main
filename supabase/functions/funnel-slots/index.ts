@@ -7,6 +7,7 @@ import {
   DAY_START_HOUR,
   GAP_MINUTES,
   MIN_NOTICE_HOURS,
+  OVERFLOW_MAX_DAYS,
   SLOT_MINUTES,
   WINDOW_DAYS,
   WORK_DAYS,
@@ -64,27 +65,34 @@ Deno.serve(async (req: Request) => {
     const slots: Record<string, string[]> = {};
 
     for (let day = minNoticeDays; day <= WINDOW_DAYS; day++) {
-      const dayKey = localDayKey(new Date(now.getTime() + day * 86400000));
-      if (!WORK_DAYS.includes(localDayOfWeek(dayKey))) continue;
+      addDaySlots(slots, day, now, busy, horizon);
+    }
 
-      const open: string[] = [];
-      const lastStart = DAY_END_HOUR * 60 - SLOT_MINUTES;
+    // Fully booked inside the normal window: rather than hand back an empty
+    // calendar, look further out and surface the first open day, so a lead
+    // who lands here during a packed stretch still sees a real time to pick.
+    // One extra calendar read, and only when the common case has failed.
+    if (!Object.keys(slots).length) {
+      const farHorizon = new Date(
+        now.getTime() + (WINDOW_DAYS + OVERFLOW_MAX_DAYS) * 86400000,
+      );
+      const [farGoogle, farBooked] = await Promise.all([
+        freeBusy(BUSY_CALENDARS, now, farHorizon),
+        existingBookings(now, farHorizon),
+      ]);
 
-      for (
-        let m = DAY_START_HOUR * 60;
-        m <= lastStart;
-        m += SLOT_MINUTES + GAP_MINUTES
-      ) {
-        const start = localInstant(dayKey, m);
-        const end = new Date(start.getTime() + SLOT_MINUTES * 60000);
+      if (!farGoogle.unreadable.length) {
+        const farBusy = [...farGoogle.busy, ...farBooked];
 
-        if (start > horizon) continue;
-        if (overlaps(start.getTime(), end.getTime(), busy)) continue;
-
-        open.push(start.toISOString());
+        for (
+          let day = WINDOW_DAYS + 1;
+          day <= WINDOW_DAYS + OVERFLOW_MAX_DAYS;
+          day++
+        ) {
+          addDaySlots(slots, day, now, farBusy, farHorizon);
+          if (Object.keys(slots).length) break;
+        }
       }
-
-      if (open.length) slots[dayKey] = open;
     }
 
     return json(req, { ok: true, slots });
@@ -93,6 +101,37 @@ Deno.serve(async (req: Request) => {
     return json(req, { ok: false, error: String(err), slots: {} }, 500);
   }
 });
+
+/** Appends one calendar day's open slots to `slots`, keyed by yyyy-MM-dd. */
+function addDaySlots(
+  slots: Record<string, string[]>,
+  dayOffset: number,
+  now: Date,
+  busy: { start: number; end: number }[],
+  horizon: Date,
+): void {
+  const dayKey = localDayKey(new Date(now.getTime() + dayOffset * 86400000));
+  if (!WORK_DAYS.includes(localDayOfWeek(dayKey))) return;
+
+  const open: string[] = [];
+  const lastStart = DAY_END_HOUR * 60 - SLOT_MINUTES;
+
+  for (
+    let m = DAY_START_HOUR * 60;
+    m <= lastStart;
+    m += SLOT_MINUTES + GAP_MINUTES
+  ) {
+    const start = localInstant(dayKey, m);
+    const end = new Date(start.getTime() + SLOT_MINUTES * 60000);
+
+    if (start > horizon) break;
+    if (overlaps(start.getTime(), end.getTime(), busy)) continue;
+
+    open.push(start.toISOString());
+  }
+
+  if (open.length) slots[dayKey] = open;
+}
 
 async function existingBookings(from: Date, to: Date) {
   const db = createClient(

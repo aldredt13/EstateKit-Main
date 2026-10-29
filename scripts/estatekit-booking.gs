@@ -49,13 +49,14 @@ var CAL_ID = "ac1d5b1bbbf21211adaadcbf04fcd48c8c34cdae4650758e2c8121de18747f40@g
 var BUSY_CALENDARS = [];
 
 var SLOT_MINUTES = 45;
-var GAP_MINUTES = 60; // an hour clear after every call
+var GAP_MINUTES = 40; // break between calls
 var MIN_NOTICE_HOURS = 24; // 1 day
 var WINDOW_DAYS = 4; // bookable days ahead
 var DAY_START_HOUR = 9;
 var DAY_END_HOUR = 17; // last slot must END by this hour
 var WORK_DAYS = [1, 2, 3, 4, 5]; // Mon–Fri
-var CACHE_SECONDS = 15; // short enough to read as live, long enough to absorb a burst
+var WORK_DAYS = [1, 2, 3, 4, 5]; // Mon–Fri
+var OVERFLOW_MAX_DAYS = 14; // how far past WINDOW_DAYS to search if fully booked
 
 /** Where a broken booking system shouts. Swap for a dedicated #alerts hook. */
 var ALERT_WEBHOOK = "https://discord.com/api/webhooks/1559251256273276939/LfnomQcmfdc4tkyliaRFmgb--lnR0v36Hr5LxkOS1Mh735KiYClhZG0naByP_-Am1eWH";
@@ -233,27 +234,46 @@ function getSlots() {
   var out = {};
 
   for (var day = minNoticeDays; day <= WINDOW_DAYS; day++) {
-    var d = new Date(now.getTime() + day * 86400000);
-    if (WORK_DAYS.indexOf(d.getDay()) === -1) continue;
+    addDaySlots(out, day, now, tz, busy, horizon);
+  }
 
-    var key = Utilities.formatDate(d, tz, "yyyy-MM-dd");
-    var slots = [];
+  // Fully booked inside the normal window: rather than hand back an empty
+  // calendar, look further out and surface the first open day, so a lead
+  // who lands here during a packed stretch still sees a real time to pick.
+  // One extra calendar read, and only when the common case has failed.
+  if (!Object.keys(out).length) {
+    var farHorizon = new Date(now.getTime() + (WINDOW_DAYS + OVERFLOW_MAX_DAYS) * 86400000);
+    var farBusy = collectBusy(now, farHorizon);
 
-    for (var h = DAY_START_HOUR * 60; h + SLOT_MINUTES <= DAY_END_HOUR * 60; h += SLOT_MINUTES + GAP_MINUTES) {
-      var start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, h, 0);
-      var end = new Date(start.getTime() + SLOT_MINUTES * 60000);
-
-      if (start > horizon) continue;
-      if (overlapsBusy(start, end, busy)) continue;
-
-      slots.push(Utilities.formatDate(start, tz, "yyyy-MM-dd'T'HH:mm:ssXXX"));
+    for (var day2 = WINDOW_DAYS + 1; day2 <= WINDOW_DAYS + OVERFLOW_MAX_DAYS; day2++) {
+      addDaySlots(out, day2, now, tz, farBusy, farHorizon);
+      if (Object.keys(out).length) break;
     }
-
-    if (slots.length) out[key] = slots;
   }
 
   cache.put("slots", JSON.stringify(out), CACHE_SECONDS);
   return out;
+}
+
+/** Appends one calendar day's open slots to `out`, keyed by yyyy-MM-dd. */
+function addDaySlots(out, dayOffset, now, tz, busy, horizon) {
+  var d = new Date(now.getTime() + dayOffset * 86400000);
+  if (WORK_DAYS.indexOf(d.getDay()) === -1) return;
+
+  var key = Utilities.formatDate(d, tz, "yyyy-MM-dd");
+  var slots = [];
+
+  for (var h = DAY_START_HOUR * 60; h + SLOT_MINUTES <= DAY_END_HOUR * 60; h += SLOT_MINUTES + GAP_MINUTES) {
+    var start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, h, 0);
+    var end = new Date(start.getTime() + SLOT_MINUTES * 60000);
+
+    if (start > horizon) break;
+    if (overlapsBusy(start, end, busy)) continue;
+
+    slots.push(Utilities.formatDate(start, tz, "yyyy-MM-dd'T'HH:mm:ssXXX"));
+  }
+
+  if (slots.length) out[key] = slots;
 }
 
 /**
