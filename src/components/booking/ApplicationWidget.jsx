@@ -339,7 +339,9 @@ export default function ApplicationWidget({
           <div className="mx-0 min-[900px]:flex">
             {/* ── Left: the application ─────────────────────────────── */}
             {!rebookFor && (
-            <div className="w-full max-w-[520px] min-[520px]:max-w-[480px] px-5 pt-5 min-[900px]:w-[404px] min-[900px]:p-6 pb-10">
+            <div
+              className={`w-full max-w-[520px] min-[520px]:max-w-[480px] px-5 pt-5 min-[900px]:w-[404px] min-[900px]:p-6 ${formDone ? "pb-4 min-[900px]:pb-6" : "pb-10"}`}
+            >
               <h1
                 className="font-semibold text-[18px] sm:text-[20px] leading-6 break-words"
                 style={{ color: INK }}
@@ -367,7 +369,10 @@ export default function ApplicationWidget({
                 </div>
               )}
 
-              {formDone ? (
+              {/* Once a time is picked, the blue summary above already says
+                  everything this card would — showing both just repeats the
+                  same fact twice and pads out the panel with nothing new. */}
+              {formDone && pickedRange && !rejected ? null : formDone ? (
                 <div
                   className={`mt-6 rounded-lg border p-4 ${
                     rejected
