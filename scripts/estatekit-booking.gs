@@ -56,6 +56,7 @@ var DAY_START_HOUR = 9;
 var DAY_END_HOUR = 17; // last slot must END by this hour
 var WORK_DAYS = [0, 1, 2, 3, 4, 5, 6]; // every day, incl. weekends
 var OVERFLOW_MAX_DAYS = 14; // how far past WINDOW_DAYS to search if fully booked
+var CACHE_SECONDS = 60; // how long the slot list is cached between calendar reads
 
 /** Where a broken booking system shouts. Swap for a dedicated #alerts hook. */
 var ALERT_WEBHOOK = "https://discord.com/api/webhooks/1559251256273276939/LfnomQcmfdc4tkyliaRFmgb--lnR0v36Hr5LxkOS1Mh735KiYClhZG0naByP_-Am1eWH";
