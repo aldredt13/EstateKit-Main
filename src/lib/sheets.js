@@ -11,4 +11,4 @@
  */
 
 export const SHEETS_ENDPOINT =
-  "https://script.google.com/macros/s/AKfycbzSvn6zpdwiyfiEcOo93uyHsDfIp9o3edJXJ90yRj1PqXYkrBJ9qFZsrCdJ7PiGw55n5w/exec";
+  "https://script.google.com/macros/s/AKfycbwUy2jG-ndLuUYndv8QHlEUBRVEvE_MhLH96eOkYYdcuAuaSj5lSXGG_N6NLJ2-3sMg6g/exec";
