@@ -13,7 +13,7 @@ export default function RadioField({ options, value, onChange, invalid }) {
   return (
     <div
       role="radiogroup"
-      className="flex flex-col gap-2"
+      className="flex flex-col gap-1.5"
       style={{ outlineColor: invalid ? "#f87171" : undefined }}
     >
       {options.map((o) => {
@@ -25,7 +25,7 @@ export default function RadioField({ options, value, onChange, invalid }) {
             role="radio"
             aria-checked={active}
             onClick={() => onChange(o.value)}
-            className="flex w-full items-center gap-3 rounded-lg border px-4 py-2.5 text-left text-sm transition-colors"
+            className="flex w-full items-center gap-2 rounded-md border px-3 py-1.5 text-left text-sm transition-colors"
             style={{
               borderColor: active ? BLUE : invalid ? "#f87171" : LINE,
               background: active ? "#EFF6FF" : "#F9FAFB",
@@ -33,17 +33,17 @@ export default function RadioField({ options, value, onChange, invalid }) {
             }}
           >
             <span
-              className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border"
+              className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-full border"
               style={{ borderColor: active ? BLUE : "#9ca3af" }}
             >
               {active && (
                 <span
-                  className="h-2 w-2 rounded-full"
+                  className="h-1.5 w-1.5 rounded-full"
                   style={{ background: BLUE }}
                 />
               )}
             </span>
-            <span className="flex-1 leading-snug">{o.label}</span>
+            <span className="flex-1 leading-tight">{o.label}</span>
           </button>
         );
       })}

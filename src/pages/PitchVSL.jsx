@@ -218,18 +218,9 @@ const PitchVSL = () => {
           <ApplicationWidget
             title="EstateKit Discovery Call"
             description={
-              <>
-                <p>
-                  A 45-minute call where we map the exact seller-attraction system
-                  to your suburbs — and tell you straight if it isn't a fit.
-                </p>
-                <p>
-                  <strong>If none of the times on the calendar work for you:</strong>
-                </p>
-                <p>
-                  ⏰ WhatsApp us and we'll find a slot that does: +264 85 287 8236
-                </p>
-              </>
+              <p>
+                Discover how we <strong>GUARANTEE CLOSED DEALS!</strong>
+              </p>
             }
             onComplete={handleComplete}
             onBook={handleBooked}
