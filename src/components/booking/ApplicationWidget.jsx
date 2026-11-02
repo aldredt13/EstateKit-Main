@@ -7,7 +7,7 @@ import {
   QUALIFYING_QUESTIONS,
   scoreAnswers,
 } from "../../config/qualifyingQuestions";
-import { createBooking, fetchSlots } from "../../lib/bookingApi";
+import { createBooking, fetchSlots, timeLabel } from "../../lib/bookingApi";
 import { submitFunnelLead, toFormAnswers } from "../../lib/dashboard";
 
 const INK = "rgb(31, 42, 55)";
@@ -159,6 +159,21 @@ export default function ApplicationWidget({
       ),
     [slots],
   );
+
+  // Shown on the left once a time is picked, so the commit click confirms
+  // "this exact slot" rather than asking them to trust the right-hand panel.
+  const pickedRange = useMemo(() => {
+    if (!date || !slot) return null;
+    const match = (slots[date] || []).find((s) => s.label === slot);
+    if (!match) return null;
+    const end = new Date(new Date(match.start).getTime() + 45 * 60000);
+    const dayLabel = new Date(`${date}T00:00:00`).toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+    });
+    return `${dayLabel} · ${slot} – ${timeLabel(end.toISOString())}`;
+  }, [date, slot, slots]);
   // Reported once, on the first keystroke, rather than on the CTA click:
   // clicking through to the form and actually starting it are different
   // things, and only the second one is a lead doing something.
@@ -331,6 +346,15 @@ export default function ApplicationWidget({
               >
                 {title}
               </h1>
+
+              {pickedRange && !booking.done && (
+                <p
+                  className="mt-2 flex items-center gap-1.5 text-sm font-medium"
+                  style={{ color: BLUE }}
+                >
+                  <CalendarIcon /> {pickedRange}
+                </p>
+              )}
 
               {description && (
                 <div className="max-h-[230px] overflow-y-auto mt-3">
@@ -650,6 +674,22 @@ function Tab({ active, done, label }) {
         {label}
       </h1>
     </div>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg
+      className="h-4 w-4 flex-shrink-0"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      aria-hidden="true"
+    >
+      <rect x="3.5" y="5" width="17" height="15" rx="2" />
+      <path strokeLinecap="round" d="M8 3v4M16 3v4M3.5 9.5h17" />
+    </svg>
   );
 }
 

@@ -1,5 +1,4 @@
 const INK = "rgb(31, 42, 55)";
-const LINE = "rgb(209, 213, 219)";
 const BLUE = "#1C64F2";
 
 /**
@@ -13,8 +12,7 @@ export default function RadioField({ options, value, onChange, invalid }) {
   return (
     <div
       role="radiogroup"
-      className="flex flex-col gap-1.5"
-      style={{ outlineColor: invalid ? "#f87171" : undefined }}
+      className={`flex flex-col gap-1 rounded-lg ${invalid ? "ring-1 ring-red-400" : ""}`}
     >
       {options.map((o) => {
         const active = o.value === value;
@@ -25,20 +23,16 @@ export default function RadioField({ options, value, onChange, invalid }) {
             role="radio"
             aria-checked={active}
             onClick={() => onChange(o.value)}
-            className="flex w-full items-center gap-2 rounded-md border px-3 py-1.5 text-left text-sm transition-colors"
-            style={{
-              borderColor: active ? BLUE : invalid ? "#f87171" : LINE,
-              background: active ? "#EFF6FF" : "#F9FAFB",
-              color: active ? BLUE : INK,
-            }}
+            className="flex w-full items-center gap-2.5 rounded-md px-1.5 py-1 text-left text-sm transition-colors hover:bg-[#F3F4F6]"
+            style={{ color: active ? BLUE : INK }}
           >
             <span
-              className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded-full border"
+              className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full border"
               style={{ borderColor: active ? BLUE : "#9ca3af" }}
             >
               {active && (
                 <span
-                  className="h-1.5 w-1.5 rounded-full"
+                  className="h-2 w-2 rounded-full"
                   style={{ background: BLUE }}
                 />
               )}
