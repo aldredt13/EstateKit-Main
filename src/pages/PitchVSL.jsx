@@ -75,7 +75,7 @@ const PitchVSL = () => {
   /** Booking now happens in-page, so it reports from here rather than Cal. */
   const handleBooked = useCallback(({ start, form, answers }) => {
     const email = form.email.trim();
-    const name = `${form.firstName} ${form.lastName}`.trim();
+    const name = form.fullName.trim();
 
     const card = postActivity("booked", {
       who: name,

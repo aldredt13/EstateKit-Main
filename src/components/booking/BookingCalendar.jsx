@@ -67,10 +67,26 @@ export default function BookingCalendar({
     () => new Date(today.getFullYear(), today.getMonth(), 1),
   );
 
-  const weeks = useMemo(
-    () => buildWeeks(cursor.getFullYear(), cursor.getMonth()),
-    [cursor],
-  );
+  // The last day this month with a real slot — weeks entirely past it are
+  // blank space with nothing to click, so they're trimmed off the grid
+  // rather than scrolled through.
+  const lastOpenDay = useMemo(() => {
+    let last = 0;
+    for (const key of Object.keys(availability)) {
+      if (!availability[key]?.length) continue;
+      const d = new Date(`${key}T00:00:00`);
+      if (d.getFullYear() === cursor.getFullYear() && d.getMonth() === cursor.getMonth()) {
+        last = Math.max(last, d.getDate());
+      }
+    }
+    return last;
+  }, [availability, cursor]);
+
+  const weeks = useMemo(() => {
+    const all = buildWeeks(cursor.getFullYear(), cursor.getMonth());
+    if (!lastOpenDay) return all;
+    return all.filter((week) => week.some((d) => d && d <= lastOpenDay));
+  }, [cursor, lastOpenDay]);
 
   const monthHasSlots = useMemo(
     () =>

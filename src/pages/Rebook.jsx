@@ -34,7 +34,7 @@ const Rebook = () => {
 
   const handleBooked = useCallback(({ start, form }) => {
     postActivity("booked", {
-      who: `${form.firstName} ${form.lastName}`.trim() || "Rebooked lead",
+      who: form.fullName.trim() || "Rebooked lead",
       fields: {
         When: new Date(start).toLocaleString(undefined, {
           weekday: "long",
@@ -53,7 +53,7 @@ const Rebook = () => {
     // Matches the existing dashboard row on phone number, so moving a time
     // updates the lead rather than creating a duplicate card.
     submitFunnelLead({
-      name: `${form.firstName} ${form.lastName}`.trim(),
+      name: form.fullName.trim(),
       phone: form.phone.trim(),
       email: form.email.trim(),
       startsAt: new Date(start).toISOString(),

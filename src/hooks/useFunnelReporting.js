@@ -91,7 +91,7 @@ export function useFunnelReporting({ getVideoFields } = {}) {
 
   const onBook = useCallback(({ start, form, answers }) => {
     const email = form.email.trim();
-    const name = `${form.firstName} ${form.lastName}`.trim();
+    const name = form.fullName.trim();
 
     const card = postActivity("booked", {
       who: name,

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PhoneField, { COUNTRIES } from "./PhoneField";
 import BookingCalendar from "./BookingCalendar";
-import SelectField, { humanDay } from "./SelectField";
+import { humanDay } from "./SelectField";
+import RadioField from "./RadioField";
 import {
   QUALIFYING_QUESTIONS,
   scoreAnswers,
@@ -15,6 +16,17 @@ const LINE = "rgb(209, 213, 219)";
 const BLUE = "#1C64F2";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+/** "Juani Marx" -> { firstName: "Juani", lastName: "Marx" }. A lone word is
+ * kept as the first name — the dashboard and calendar invite both need
+ * *something* in last name, but a missing one is better than inventing it. */
+function splitName(full) {
+  const parts = full.trim().split(/\s+/);
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.slice(1).join(" "),
+  };
+}
 
 /** Who you are, then everything else in one block. */
 const STAGE = { IDENTITY: 0, APPLICATION: 1, DONE: 2 };
@@ -52,8 +64,9 @@ export default function ApplicationWidget({
   const [country, setCountry] = useState(COUNTRIES[0]);
   const [form, setForm] = useState({
     phone: rebookFor?.phone || COUNTRIES[0].dial,
-    firstName: rebookFor?.firstName || "",
-    lastName: rebookFor?.lastName || "",
+    fullName: rebookFor
+      ? `${rebookFor.firstName || ""} ${rebookFor.lastName || ""}`.trim()
+      : "",
     email: rebookFor?.email || "",
   });
   const [answers, setAnswers] = useState({});
@@ -90,7 +103,7 @@ export default function ApplicationWidget({
       // The dashboard requires both a name and a number, so a lead who only
       // got as far as one of them cannot be recorded. Everything past that
       // is a bonus, and scoreAnswers copes with a partial answer map.
-      const name = `${s.form.firstName.trim()} ${s.form.lastName.trim()}`.trim();
+      const name = s.form.fullName.trim();
       const reachable = s.localDigits.length >= 7;
       if (!name || !reachable) return;
 
@@ -175,8 +188,7 @@ export default function ApplicationWidget({
     const next = {};
     if (localDigits.replace(country.dial.replace("+", ""), "").length < 7)
       next.phone = "Enter your full number so we can reach you.";
-    if (!form.firstName.trim()) next.firstName = "First name is required.";
-    if (!form.lastName.trim()) next.lastName = "Last name is required.";
+    if (!form.fullName.trim()) next.fullName = "Your name is required.";
 
     if (stage >= STAGE.APPLICATION) {
       if (!EMAIL.test(form.email.trim()))
@@ -196,7 +208,7 @@ export default function ApplicationWidget({
 
     if (stage < STAGE.APPLICATION) {
       onReachedContact?.({
-        name: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
+        name: form.fullName.trim(),
         phone: form.phone.trim(),
       });
       setStage(stage + 1);
@@ -207,7 +219,7 @@ export default function ApplicationWidget({
 
     const result = scoreAnswers(answers);
     const contact = {
-      name: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
+      name: form.fullName.trim(),
       email: form.email.trim(),
       phone: form.phone.trim(),
     };
@@ -243,7 +255,7 @@ export default function ApplicationWidget({
       const scored = scoreAnswers(answers);
       const result = await createBooking({
         start: match.start,
-        name: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
+        name: form.fullName.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
         // A rebook never re-asks the questions, so there is nothing to score.
@@ -275,7 +287,7 @@ export default function ApplicationWidget({
       // Hand off to the thank-you page, which owns the confirmation content
       // and the engagement tracking. Params match what it already parses.
       const params = new URLSearchParams({
-        attendeeName: `${form.firstName.trim()} ${form.lastName.trim()}`.trim(),
+        attendeeName: form.fullName.trim(),
         email: form.email.trim(),
         attendeePhoneNumber: form.phone.trim(),
         attendeeStartTime: match.start,
@@ -341,8 +353,8 @@ export default function ApplicationWidget({
                 >
                   <p className="text-sm font-medium" style={{ color: INK }}>
                     {rejected
-                      ? `Thanks ${form.firstName} — we've got your details.`
-                      : `Thanks ${form.firstName} — now pick a time that suits you.`}
+                      ? `Thanks ${splitName(form.fullName).firstName} — we've got your details.`
+                      : `Thanks ${splitName(form.fullName).firstName} — now pick a time that suits you.`}
                   </p>
                 </div>
               ) : (
@@ -366,37 +378,21 @@ export default function ApplicationWidget({
                       <ErrorText>{errors.phone}</ErrorText>
                     </div>
 
-                    <div className="w-full mb-4">
+                    <div className="col-span-2 w-full mb-4">
                       <input
                         type="text"
-                        maxLength={30}
-                        placeholder="First name *"
-                        name="firstName"
-                        autoComplete="given-name"
-                        value={form.firstName}
-                        onChange={(e) => set("firstName", e.target.value)}
+                        maxLength={60}
+                        placeholder="Full name *"
+                        name="name"
+                        autoComplete="name"
+                        value={form.fullName}
+                        onChange={(e) => set("fullName", e.target.value)}
                         className={inputClass}
                         style={{
-                          borderColor: errors.firstName ? "#f87171" : LINE,
+                          borderColor: errors.fullName ? "#f87171" : LINE,
                         }}
                       />
-                      <ErrorText>{errors.firstName}</ErrorText>
-                    </div>
-                    <div className="w-full mb-4">
-                      <input
-                        type="text"
-                        maxLength={30}
-                        placeholder="Last name *"
-                        name="lastName"
-                        autoComplete="family-name"
-                        value={form.lastName}
-                        onChange={(e) => set("lastName", e.target.value)}
-                        className={inputClass}
-                        style={{
-                          borderColor: errors.lastName ? "#f87171" : LINE,
-                        }}
-                      />
-                      <ErrorText>{errors.lastName}</ErrorText>
+                      <ErrorText>{errors.fullName}</ErrorText>
                     </div>
                   </div>
 
@@ -439,13 +435,12 @@ export default function ApplicationWidget({
                               }}
                             />
                           ) : (
-                            <SelectField
+                            <RadioField
                               options={q.options}
                               value={answers[q.id] || ""}
                               onChange={(v) =>
                                 setAnswers((a) => ({ ...a, [q.id]: v }))
                               }
-                              placeholder={q.placeholder || "Select one"}
                               invalid={errors[q.id]}
                             />
                           )}
