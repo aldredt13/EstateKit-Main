@@ -386,14 +386,15 @@ const CalendarIcon = () => (
   </svg>
 );
 
-/** Simplified Meet mark, in the real product's four colors, so it reads as
-    "this is a video call" rather than a generic camera icon. */
+/** A green camera badge in Meet's brand color — reads as "video call"
+    without trying (and risking getting wrong) to redraw the real logo. */
 const MeetIcon = () => (
   <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-    <path fill="#00AC47" d="M3 8.5v7a2 2 0 0 0 2 2h4v-11H5a2 2 0 0 0-2 2Z" />
-    <path fill="#EA4335" d="M9 5.5v2.6h5.2L17 5.5H9Z" />
-    <path fill="#FFBA00" d="M9 15.5v2.6h5.2l2.8-2.6H9Z" />
-    <path fill="#0066DA" d="M14.2 8.1 9 12l5.2 3.9V8.1Z" />
-    <path fill="#00832D" d="M17 5.5v13l4-3.1V8.6l-4-3.1Z" />
+    <rect x="2" y="2" width="20" height="20" rx="5" fill="#00AC47" />
+    <path
+      d="M7 9.2A1.2 1.2 0 0 1 8.2 8h5.1a1.2 1.2 0 0 1 1.2 1.2v5.6a1.2 1.2 0 0 1-1.2 1.2H8.2A1.2 1.2 0 0 1 7 14.8V9.2Z"
+      fill="#fff"
+    />
+    <path d="m14.5 11 2.8-1.7a.6.6 0 0 1 .9.5v4.4a.6.6 0 0 1-.9.5L14.5 13v-2Z" fill="#fff" />
   </svg>
 );
