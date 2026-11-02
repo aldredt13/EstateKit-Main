@@ -65,6 +65,7 @@ export default function PhoneField({ value, onChange, country, onCountry, invali
 
       <button
         type="button"
+        tabIndex={-1}
         onClick={() => setOpen((o) => !o)}
         aria-label="Select country code"
         aria-expanded={open}
