@@ -332,7 +332,7 @@ export default function ApplicationWidget({
               style={{ borderColor: LINE }}
             >
               <Tab active={!formDone} done={formDone} label="Fill out the form" />
-              {!rejected && <Tab active={formDone} label="Book your event" />}
+              {!rejected && <Tab active={formDone} label="Book your call" />}
             </div>
           )}
 
@@ -348,15 +348,6 @@ export default function ApplicationWidget({
               >
                 {title}
               </h1>
-
-              {pickedRange && !booking.done && (
-                <p
-                  className="mt-2 flex items-center gap-1.5 text-sm font-medium"
-                  style={{ color: BLUE }}
-                >
-                  <CalendarIcon /> {pickedRange}
-                </p>
-              )}
 
               {description && (
                 <div className="max-h-[230px] overflow-y-auto mt-3">
@@ -622,6 +613,7 @@ export default function ApplicationWidget({
                       setSlot(null);
                     }}
                     dimmed={!formDone}
+                    pickedSummary={!booking.done ? pickedRange : null}
                     timezoneLabel={
                       formDone
                         ? Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -679,22 +671,6 @@ function Tab({ active, done, label }) {
         {label}
       </h1>
     </div>
-  );
-}
-
-function CalendarIcon() {
-  return (
-    <svg
-      className="h-4 w-4 flex-shrink-0"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      aria-hidden="true"
-    >
-      <rect x="3.5" y="5" width="17" height="15" rx="2" />
-      <path strokeLinecap="round" d="M8 3v4M16 3v4M3.5 9.5h17" />
-    </svg>
   );
 }
 
